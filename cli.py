@@ -120,26 +120,61 @@ def show_config(config):
         except FileNotFoundError:
             config = {}
 
-        data_to_show = []
+        config_aux = {
+            "pr_idx": {
+                "web": lambda ip: f"http://{ip}:8000",
+                "env": "PR",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+            "pr_sh": {
+                "web": lambda ip: f"http://{ip}:8000",
+                "env": "PR",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+            "manager": {
+                "web": lambda ip: f"http://{ip}:8000",
+                "env": "",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+            "de_sh": {
+                "web": lambda ip: f"http://{ip}:8000",
+                "env": "DE",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+            "de_idx": {
+                "web": lambda ip: f"http://{ip}:8000",
+                "env": "DE",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+            "lb": {
+                "web": lambda ip: f"http://{ip}",
+                "env": "",
+                "dir": LOAD_BALANCER_DIR,
+            },
+            "fwd": {
+                "web": lambda _: "",
+                "env": "",
+                "dir": UNIVERSAL_FORWARDER_DIR,
+            },
+            "hf": {
+                "web": lambda _: "",
+                "env": "",
+                "dir": SPLUNK_ENTERPRISE_DIR,
+            },
+        }
 
+        data_to_show = []
         for component, data in config.items():
             for ip in data.get("ips", []):
                 type = component.replace("pr_", "").replace("de_", "")
-
-                environment = component.split("_")[0]
-                environment = "" if environment == type else environment
-                environment = "PR" if environment == "pr" else environment
-                environment = "DE" if environment == "de" else environment
+                environment = config_aux[component]["env"]
+                dir = config_aux[component]["dir"]
 
                 vm_name = (
                     f"{component}{ip[-1]}"
-                    if environment == "Production" or type == "fwd"
+                    if environment == "PR" or type == "fwd"
                     else component
                 )
-
-                dir = SPLUNK_ENTERPRISE_DIR
-                dir = UNIVERSAL_FORWARDER_DIR if type == "fwd" else dir
-                dir = LOAD_BALANCER_DIR if type == "lb" else dir
 
                 cwd = path.dirname(path.realpath(__file__))
 
@@ -147,17 +182,13 @@ def show_config(config):
                     f"{cwd}/{dir}/.vagrant/machines/{vm_name}/virtualbox/private_key"
                 )
 
-                web = f"http://{ip}:8000"
-                web = f"http://{ip}" if type == "lb" else web
-                web = "" if type == "hf" or type == "fwd" else web
-
                 data_to_show.append(
                     [
                         ip,
                         vm_name,
                         COMPONENTS_ABBR[type],
                         environment,
-                        web,
+                        config_aux[component]["web"](ip),
                         f"ssh -i {identity_file} vagrant@{ip}",
                     ]
                 )
