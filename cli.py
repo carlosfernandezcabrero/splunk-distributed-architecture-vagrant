@@ -150,8 +150,14 @@ def show_config(config):
                     else component
                 )
 
+                dir = SPLUNK_ENTERPRISE_DIR
+                dir = UNIVERSAL_FORWARDER_DIR if type == "fwd" else dir
+                dir = LOAD_BALANCER_DIR if type == "lb" else dir
+
+                cwd = path.dirname(path.realpath(__file__))
+
                 identity_file = path.normpath(
-                    f"{path.dirname(path.realpath(__file__))}/{UNIVERSAL_FORWARDER_DIR if type == 'fwd' else SPLUNK_ENTERPRISE_DIR}/.vagrant/machines/{vm_name}/virtualbox/private_key"
+                    f"{cwd}/{dir}/.vagrant/machines/{vm_name}/virtualbox/private_key"
                 )
 
                 web = f"http://{ip}:8000"
