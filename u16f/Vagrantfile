@@ -1,0 +1,72 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'json'
+
+data_file = File.read('../config.json')
+data_hash = JSON.parse(data_file)
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.box = data_hash['base_config']['box']
+
+    config.vm.provider "virtualbox" do |v|
+        v.memory = 512
+        v.cpus = 1
+    end
+
+    config.vm.provision "file",
+        source: "../common/downloads/universalforwarder.tgz",
+        destination: "/tmp/universalforwarder.tgz"
+
+    config.vm.provision "shell",
+        privileged: false,
+        inline: <<-SHELL
+            sudo timedatectl set-timezone Europe/Madrid
+            sudo mkdir -p /usr/local
+            sudo tar -xzf /tmp/universalforwarder.tgz -C /usr/local/
+            sudo chown -R vagrant:vagrant /usr/local/splunkforwarder
+    SHELL
+
+    config.vm.provision "file",
+        source: "./config/splunk-launch.conf",
+        destination: "/usr/local/splunkforwarder/etc/splunk-launch.conf"
+
+    config.vm.provision "file",
+        source: "./config/deploymentclient.conf",
+        destination: "/usr/local/splunkforwarder/etc/apps/conf_deployment/default/deploymentclient.conf"
+
+    (data_hash['fwd']['ips']).each do |ip|
+        last_char = ip[-1, 1]
+        display_name = "fwd#{last_char}"
+        internal_name = "fwd#{last_char}"
+
+        config.vm.define display_name do |fwd|
+            fwd.vm.hostname = internal_name
+            fwd.vm.network :private_network, ip: ip
+            fwd.vm.provider :virtualbox do |vb|
+                vb.name = display_name
+            end
+
+            servers_pr ="#{data_hash['pr_idx']['ips'].join(':9997,')}:9997"
+            servers_de = "#{data_hash['de_idx']['ips'][0]}:9997"
+
+            fwd.vm.provision "shell" do |s|
+                s.privileged = false
+                s.path = "../common/config/generate_forwarder_conf.sh"
+                s.args = [servers_pr, servers_de, display_name, "splunkforwarder"]
+            end
+        end
+    end
+
+    config.vm.provision "start",
+        type: "shell",
+        privileged: false,
+        after: :all,
+        inline: <<-SHELL
+            /usr/local/splunkforwarder/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
+    SHELL
+end

@@ -1,0 +1,7 @@
+.vagrant/
+common/downloads/*
+!common/downloads/.gitkeep
+*.log
+.DS_Store
+*.pem
+config.json

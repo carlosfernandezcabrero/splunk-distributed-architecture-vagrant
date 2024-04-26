@@ -1,0 +1,211 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'json'
+
+data_file = File.read('../config.json')
+data_hash = JSON.parse(data_file)
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.box = data_hash['base_config']['box']
+
+    config.vm.provider "virtualbox" do |v|
+        v.memory = 1024
+        v.cpus = 1
+    end
+
+    config.vm.provision "file",
+        source: "../common/downloads/splunk-enterprise.tgz",
+        destination: "/tmp/splunk-enterprise.tgz"
+
+    config.vm.provision "shell",
+        privileged: false,
+        inline: <<-SHELL
+            sudo timedatectl set-timezone Europe/Madrid
+            sudo mkdir -p /usr/local
+            sudo tar -xzf /tmp/splunk-enterprise.tgz -C /usr/local/
+            sudo chown -R vagrant:vagrant /usr/local/splunk
+    SHELL
+
+    config.vm.provision "file",
+        source: "./config/splunk-launch.conf",
+        destination: "/usr/local/splunk/etc/splunk-launch.conf"
+
+    config.vm.define "manager" do |manager|
+        manager.vm.hostname = "manager"
+        manager.vm.network :private_network, ip: data_hash['manager']['ips'][0]
+        manager.vm.provider :virtualbox do |vb|
+            vb.name = "manager"
+        end
+
+        manager.vm.provision "file",
+            source: "./config/manager/server.conf",
+            destination: "/usr/local/splunk/etc/system/local/server.conf"
+
+        manager.vm.provision "shell", privileged: false, inline: <<-SHELL
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "serverName = manager" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+        SHELL
+    end
+
+    config.vm.define "de_idx" do |de_idx|
+        de_idx.vm.hostname = "deidx"
+        de_idx.vm.network :private_network, ip: data_hash['de_idx']['ips'][0]
+        de_idx.vm.provider :virtualbox do |vb|
+            vb.name = "de_idx"
+        end
+
+        de_idx.vm.provision "file",
+            source: "./config/idx/inputs.conf",
+            destination: "/usr/local/splunk/etc/system/local/inputs.conf"
+
+        de_idx.vm.provision "file",
+            source: "./config/pem/trusted.pem",
+            destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/trusted.pem"
+        
+        de_idx.vm.provision "file",
+            source: "./config/pem/private.pem",
+            destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
+
+        de_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
+            echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
+            echo "serverName = de_idx" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "[replication_port://8080]" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+        SHELL
+    end
+
+    config.vm.define "de_sh" do |de_sh|
+        de_sh.vm.hostname = "desh"
+        de_sh.vm.network :private_network, ip: data_hash['de_sh']['ips'][0]
+        de_sh.vm.provider :virtualbox do |vb|
+            vb.name = "de_sh"
+        end
+        
+        de_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
+            echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
+            echo "serverName = de_sh" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+
+            echo "[distributedSearch]" > /usr/local/splunk/etc/system/local/distsearch.conf
+            echo "servers = https://#{data_hash['de_idx']['ips'][0]}:8089,https://#{data_hash['pr_idx']['ips'].join(':8089,https://')}:8089" >> /usr/local/splunk/etc/system/local/distsearch.conf
+
+            /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
+            cp /usr/local/splunk/etc/auth/distServerKeys/*.pem /vagrant/config/pem/
+            /usr/local/splunk/bin/splunk stop
+        SHELL
+    end
+
+    (data_hash['pr_idx']['ips']).each do |ip|
+        last_char = ip[-1, 1]
+        display_name = "pr_idx#{last_char}"
+        internal_name = "pridx#{last_char}"
+
+        config.vm.define display_name do |pr_idx|
+            pr_idx.vm.hostname = internal_name
+            pr_idx.vm.network :private_network, ip: ip
+            pr_idx.vm.provider :virtualbox do |vb|
+                vb.name = display_name
+            end
+
+            pr_idx.vm.provision "file",
+                source: "./config/idx/inputs.conf",
+                destination: "/usr/local/splunk/etc/system/local/inputs.conf"
+
+            pr_idx.vm.provision  "file",
+                source: "./config/idx/server.conf", 
+                destination: "/usr/local/splunk/etc/system/local/server.conf"
+
+            pr_idx.vm.provision "file",
+                source: "./config/pem/trusted.pem",
+                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/trusted.pem"
+            
+            pr_idx.vm.provision "file",
+                source: "./config/pem/private.pem",
+                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
+
+            pr_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "serverName = #{display_name}" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+            SHELL
+        end
+    end
+
+    config.vm.define "hf" do |hf|
+        hf.vm.hostname = "hf"
+        hf.vm.network :private_network, ip: data_hash['hf']['ips'][0]
+        hf.vm.provider :virtualbox do |vb|
+            vb.name = "hf"
+        end
+
+        servers_pr ="#{data_hash['pr_idx']['ips'].join(':9997,')}:9997"
+        servers_de = "#{data_hash['de_idx']['ips'][0]}:9997"
+        server_name = "hf"
+
+        hf.vm.provision "shell" do |s|
+            s.privileged = false
+            s.path = "../common/config/generate_forwarder_conf.sh"
+            s.args = [servers_pr, servers_de, server_name, "splunk"]
+        end
+    end
+
+    (data_hash['pr_sh']['ips']).each do |ip, index|
+        last_char = ip[-1, 1]
+        display_name = "pr_sh#{last_char}"
+        internal_name = "prsh#{last_char}"
+        last_ip = data_hash['pr_sh']['ips'].last
+
+        config.vm.define display_name do |pr_sh|
+            pr_sh.vm.hostname = internal_name
+            pr_sh.vm.network :private_network, ip: ip
+            pr_sh.vm.provider :virtualbox do |vb|
+                vb.name = display_name
+            end
+
+            pr_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
+                echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
+                echo "serverName = #{display_name}" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "master_uri = https://#{data_hash['manager']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "mode = searchhead" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "[replication_port://9888]" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "[shclustering]" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "conf_deploy_fetch_url = https://#{data_hash['manager']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "disabled = 0" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "shcluster_label = cluster_1" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "replication_factor = 2" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "mgmt_uri = https://#{ip}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "" >> /usr/local/splunk/etc/system/local/server.conf
+
+                if [ "#{ip}" == "#{last_ip}" ]
+                then
+                    /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
+                    /usr/local/splunk/bin/splunk bootstrap shcluster-captain -servers_list "https://#{data_hash['pr_sh']['ips'].join(':8089,https://')}:8089" -auth admin:admin1234
+                    /usr/local/splunk/bin/splunk stop
+                fi
+            SHELL
+        end
+    end
+
+    config.vm.provision "start",
+        type: "shell",
+        privileged: false,
+        after: :all,
+        inline: <<-SHELL
+            /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
+    SHELL
+end

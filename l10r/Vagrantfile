@@ -1,0 +1,37 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'json'
+
+data_file = File.read('../config.json')
+data_hash = JSON.parse(data_file)
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.provision "shell",
+        privileged: false,
+        inline: <<-SHELL
+            sudo timedatectl set-timezone Europe/Madrid
+    SHELL
+
+    config.vm.define "lb" do |lb|
+        lb.vm.box = "ubuntu/bionic64"
+        lb.vm.hostname = "lb"
+        lb.vm.network :private_network, ip: data_hash['lb']['ips'][0]
+        lb.vm.provider :virtualbox do |vb|
+            vb.name = "lb"
+            vb.memory = 512
+            vb.cpus = 1
+        end
+
+        servers = data_hash['pr_sh']['ips'].map { |ip| "server #{ip}:8000;" }.join(" ")
+
+        lb.vm.provision "shell" do |s|
+            s.path = "config_nginx.sh"
+            s.args = [servers]
+        end
+    end
+end
