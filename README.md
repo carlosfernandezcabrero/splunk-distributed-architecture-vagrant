@@ -5,6 +5,7 @@
 - [Splunk Distributed Architecture Vagrant](#splunk-distributed-architecture-vagrant)
   - [Tabla de contenidos](#tabla-de-contenidos)
   - [Requisitos](#requisitos)
+  - [🔑 Credenciales](#-credenciales)
   - [Primer uso](#primer-uso)
   - [Uso](#uso)
     - [Tu primera vez levantando un componente de la infraestructura 🚀](#tu-primera-vez-levantando-un-componente-de-la-infraestructura-)
@@ -18,6 +19,13 @@
 - Tener instalado VirtualBox con una versión igual o superior a la 7.
 - Tener instalado Python 3.
 - Tener instalado Vagrant con una versión igual o superior a la 2.4.1.
+
+## 🔑 Credenciales
+
+Las credenciales del usuario de instalación de Splunk son las siguientes:
+
+- username: admin
+- password: admin1234
 
 ## Primer uso
 
