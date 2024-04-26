@@ -55,19 +55,13 @@ def config_base_image(image):
     type=click.IntRange(min=2),
     help="Number of production instances to be scaled",
 )
-@click.option(
-    "--launch",
-    "-l",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Launch new instances after configuration",
-)
-def config_instances(component, instances, launch):
+def config_instances(component, instances):
+    component_without_prefix = component.replace("pr_", "")
+
     config_to_add = {
         component: {
             "ips": [
-                f"{BASE_IP}{PR_COMPONENTS_IP_RANGE[component.replace('pr_', '')]}{n}"
+                f"{BASE_IP}{PR_COMPONENTS_IP_RANGE[component_without_prefix]}{n}"
                 for n in range(1, instances + 1)
             ],
         }
@@ -78,45 +72,38 @@ def config_instances(component, instances, launch):
         prev_config = {}
 
     prev_ips = prev_config.get(component, {}).get("ips", [])
+    new_ips = config_to_add[component]["ips"]
     new_instances = [ip for ip in config_to_add[component]["ips"] if ip not in prev_ips]
+
     prev_config.update(config_to_add)
 
     with open("config.json", "w") as f:
         json.dump(prev_config, f, indent=4)
 
-    if not new_instances:
+    if len(new_ips) > len(prev_ips):
+        click.echo("\nNew instances added to configuration:\n")
         click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component.replace('pr_', '')]} instances already configured.\n"
-        )
-        return
-
-    if len(config_to_add[component]["ips"]) < len(prev_ips):
-        click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component.replace('pr_', '')]} instances scaled down. The scale must be do manually.\n"
-        )
-        return
-
-    click.echo("\nNew instances added to configuration:\n")
-    click.echo(
-        tabulate(
-            [
+            tabulate(
                 [
-                    ip,
-                    f"{component}{ip[-1]}",
-                ]
-                for ip in new_instances
-            ],
-            headers=["IP", "VM Name"],
-            tablefmt="grid",
+                    [
+                        ip,
+                        f"{component}{ip[-1]}",
+                    ]
+                    for ip in new_instances
+                ],
+                headers=["IP", "VM Name"],
+                tablefmt="grid",
+            )
         )
-    )
-    click.echo()
-
-    if launch and new_instances:
-        dir = UNIVERSAL_FORWARDER_DIR if component == "fwd" else SPLUNK_ENTERPRISE_DIR
-        vms = " ".join([f"{component}{ip[-1]}" for ip in new_instances])
-
-        system(f"cd {dir} && vagrant up {vms} && cd -")
+        click.echo()
+    elif len(new_ips) < len(prev_ips):
+        click.echo(
+            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances scaled down\n"
+        )
+    else:
+        click.echo(
+            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances already configured.\n"
+        )
 
 
 @cli.command(help="Show architecture configuration")
