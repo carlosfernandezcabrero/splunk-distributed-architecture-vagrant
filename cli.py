@@ -169,21 +169,16 @@ def info(about):
 
         data_to_show = []
         for component, data in config.items():
+            component_config = COMPONENTS_CONFIG.get(component, {})
+
             for ip in data.get("ips", []):
                 type = component.replace("pr_", "").replace("de_", "")
-                environment = COMPONENTS_CONFIG[component]["env"]
-                dir = COMPONENTS_CONFIG[component]["dir"]
+                environment = component_config["env"]
 
                 vm_name = (
                     f"{component}{ip[-1]}"
                     if environment == "PR" or type == "fwd"
                     else component
-                )
-
-                cwd = path.dirname(path.realpath(__file__))
-
-                identity_file = path.normpath(
-                    f"{cwd}/{dir}/.vagrant/machines/{vm_name}/virtualbox/private_key"
                 )
 
                 data_to_show.append(
@@ -192,8 +187,7 @@ def info(about):
                         vm_name,
                         COMPONENTS_ABBR[type],
                         environment,
-                        COMPONENTS_CONFIG[component]["web"](ip),
-                        f"ssh -i {identity_file} vagrant@{ip}",
+                        component_config["web"](ip),
                     ]
                 )
 
@@ -206,7 +200,6 @@ def info(about):
                     "Type",
                     "Env",
                     "Web",
-                    "SSH connection command",
                 ],
                 tablefmt="grid",
             )
