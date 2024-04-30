@@ -106,15 +106,19 @@ def config_instances(component, instances):
         )
 
 
-@cli.command(help="Show architecture configuration")
-@click.option(
-    "--config",
-    "-c",
-    type=click.Choice(["ips"], case_sensitive=False),
-    help="Configuration to show",
+@cli.command(
+    help="""Show information about the architecture.
+    
+    - components: Show information about the components (IP, virtual machine name, type, environment and web interface)"""
 )
-def show_config(config):
-    def ips():
+@click.argument(
+    "about",
+    type=click.Choice(["components"], case_sensitive=False),
+    nargs=1,
+    required=True,
+)
+def info(about):
+    def components():
         try:
             config = json.load(open("config.json"))
         except FileNotFoundError:
@@ -208,9 +212,9 @@ def show_config(config):
             )
         )
 
-    switch = {"ips": ips}
+    switch = {"components": components}
 
-    switch[config]()
+    switch[about]()
 
 
 @cli.command(
