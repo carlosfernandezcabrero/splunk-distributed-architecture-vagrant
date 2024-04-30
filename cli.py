@@ -1,4 +1,5 @@
 import json
+import re
 from os import path, system
 
 import click
@@ -17,6 +18,48 @@ COMPONENTS_ABBR = {
 SPLUNK_ENTERPRISE_DIR = "s14e"
 UNIVERSAL_FORWARDER_DIR = "u16f"
 LOAD_BALANCER_DIR = "l10r"
+COMPONENTS_CONFIG = {
+    "pr_idx": {
+        "web": lambda ip: f"http://{ip}:8000",
+        "env": "PR",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+    "pr_sh": {
+        "web": lambda ip: f"http://{ip}:8000",
+        "env": "PR",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+    "manager": {
+        "web": lambda ip: f"http://{ip}:8000",
+        "env": "",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+    "de_sh": {
+        "web": lambda ip: f"http://{ip}:8000",
+        "env": "DE",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+    "de_idx": {
+        "web": lambda ip: f"http://{ip}:8000",
+        "env": "DE",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+    "lb": {
+        "web": lambda ip: f"http://{ip}",
+        "env": "",
+        "dir": LOAD_BALANCER_DIR,
+    },
+    "fwd": {
+        "web": lambda _: "",
+        "env": "",
+        "dir": UNIVERSAL_FORWARDER_DIR,
+    },
+    "hf": {
+        "web": lambda _: "",
+        "env": "",
+        "dir": SPLUNK_ENTERPRISE_DIR,
+    },
+}
 
 
 @click.group()
@@ -124,55 +167,12 @@ def info(about):
         except FileNotFoundError:
             config = {}
 
-        config_aux = {
-            "pr_idx": {
-                "web": lambda ip: f"http://{ip}:8000",
-                "env": "PR",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-            "pr_sh": {
-                "web": lambda ip: f"http://{ip}:8000",
-                "env": "PR",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-            "manager": {
-                "web": lambda ip: f"http://{ip}:8000",
-                "env": "",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-            "de_sh": {
-                "web": lambda ip: f"http://{ip}:8000",
-                "env": "DE",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-            "de_idx": {
-                "web": lambda ip: f"http://{ip}:8000",
-                "env": "DE",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-            "lb": {
-                "web": lambda ip: f"http://{ip}",
-                "env": "",
-                "dir": LOAD_BALANCER_DIR,
-            },
-            "fwd": {
-                "web": lambda _: "",
-                "env": "",
-                "dir": UNIVERSAL_FORWARDER_DIR,
-            },
-            "hf": {
-                "web": lambda _: "",
-                "env": "",
-                "dir": SPLUNK_ENTERPRISE_DIR,
-            },
-        }
-
         data_to_show = []
         for component, data in config.items():
             for ip in data.get("ips", []):
                 type = component.replace("pr_", "").replace("de_", "")
-                environment = config_aux[component]["env"]
-                dir = config_aux[component]["dir"]
+                environment = COMPONENTS_CONFIG[component]["env"]
+                dir = COMPONENTS_CONFIG[component]["dir"]
 
                 vm_name = (
                     f"{component}{ip[-1]}"
@@ -192,7 +192,7 @@ def info(about):
                         vm_name,
                         COMPONENTS_ABBR[type],
                         environment,
-                        config_aux[component]["web"](ip),
+                        COMPONENTS_CONFIG[component]["web"](ip),
                         f"ssh -i {identity_file} vagrant@{ip}",
                     ]
                 )
@@ -285,6 +285,20 @@ def manage_aux(action, components):
         }
 
         switch[action]()
+
+
+@cli.command(
+    help="""Connect to a virtual machine.
+            
+            - vm: Virtual machine name to connect. To see available virtual machines names, use the command \"info components\""""
+)
+@click.argument("vm", type=click.STRING, nargs=1, required=True)
+def connect(vm):
+    component = re.sub(r"\d", "", vm)
+    component_config = COMPONENTS_CONFIG[component]
+    component_dir = component_config["dir"]
+
+    system(f"cd {component_dir} && vagrant ssh {vm} && cd -")
 
 
 if __name__ == "__main__":
