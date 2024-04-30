@@ -152,16 +152,16 @@ def config_instances(component, instances):
 @cli.command(
     help="""Show information about the architecture.
     
-    - components: Show information about the components (IP, virtual machine name, type, environment and web interface)"""
+    - vms: Show information about the virtual machines (IP, virtual machine name, type, environment and web interface)"""
 )
 @click.argument(
     "about",
-    type=click.Choice(["components"], case_sensitive=False),
+    type=click.Choice(["vms"], case_sensitive=False),
     nargs=1,
     required=True,
 )
 def info(about):
-    def components():
+    def vms():
         try:
             config = json.load(open("config.json"))
         except FileNotFoundError:
@@ -205,7 +205,7 @@ def info(about):
             )
         )
 
-    switch = {"components": components}
+    switch = {"vms": vms}
 
     switch[about]()
 
