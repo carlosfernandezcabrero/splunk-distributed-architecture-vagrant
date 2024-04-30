@@ -283,7 +283,7 @@ def manage_aux(action, components):
 @cli.command(
     help="""Connect to a virtual machine.
             
-            - vm: Virtual machine name to connect. To see available virtual machines names, use the command \"info components\""""
+            - vm: Virtual machine name to connect. To see available virtual machines names, use the command \"info vms\""""
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
