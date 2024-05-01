@@ -71,6 +71,64 @@ También se puede usar con los comandos de Vagrant directamente. Para saber mas 
 python cli.py manage --action=start core_de
 ```
 
+### Comandos
+
+#### manage
+
+Este comando sirve para manejar el estado de las componentes de la arquitectura. Con este comando podemos pararlos, levantarlos o destruirlos.
+
+Para obtener mas información ejecutar:
+
+```bash
+python manage --help
+```
+
+#### info
+
+Este comando sirve para obtener información de ayuda. Las opciones que tenemos son las siguientes:
+
+- vms: Nos da información sobre las maquina virtuales que componen toda la infraestructura.
+
+Para obtener mas información ejecutar:
+
+```bash
+python info --help
+```
+
+#### config-base-image
+
+Este comando sirve para configurar la imagen base de Vagrant que van a utilizar todas las maquinas virtuales de la infraestructura.
+
+Para obtener mas información ejecutar:
+
+```bash
+python config-base-image --help
+```
+
+#### connect
+
+Este comando sirve para conectarnos a las maquinas virtuales por SSH.
+
+Para obtener mas información ejecutar:
+
+```bash
+python connect --help
+```
+
+#### config-instances
+
+Este comando sirve para configurar cuantas instancias queremos de los siguientes componentes:
+
+- Forwarders
+- Indexadores
+- Search heads.
+
+Para obtener mas información ejecutar:
+
+```bash
+python config-instances --help
+```
+
 ## Especificaciones técnicas por defecto de la infraestructura
 
 ![Architecture diagram](readme/images/general-archiecture.png)
