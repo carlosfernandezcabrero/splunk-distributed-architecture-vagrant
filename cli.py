@@ -240,7 +240,6 @@ def manage_aux(action, components):
 
     servers = {
         "core_pr": [
-            "manager",
             *[f"pr_idx{ip[-1]}" for ip in pr_idx_ips],
             *[f"pr_sh{ip[-1]}" for ip in pr_sh_ips],
         ],
@@ -258,26 +257,24 @@ def manage_aux(action, components):
         "lb": LOAD_BALANCER_DIR,
     }
 
+    vagrant_actions = {"start": "up", "stop": "halt", "destroy": "destroy"}
+
     for component in components:
         if component == "all":
             manage_aux(action, ["core_de", "core_pr", "lb", "hf", "fwd"])
             break
 
         v_servers_names = " ".join(servers[component])
+        vagrant_action = vagrant_actions[action]
+        cd_command = f"cd {dir[component]}"
+        vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
 
-        switch = {
-            "start": lambda: system(
-                f"cd {dir[component]} && vagrant up {v_servers_names} && cd -"
-            ),
-            "stop": lambda: system(
-                f"cd {dir[component]} && vagrant halt {v_servers_names} && cd -"
-            ),
-            "destroy": lambda: system(
-                f"cd {dir[component]} && vagrant destroy {v_servers_names} && cd -"
-            ),
-        }
+        if component == "core_pr" and action == "start":
+            vagrant_command = f"vagrant {vagrant_action} manager && python check_master_status.py && {vagrant_command}"
 
-        switch[action]()
+        command = f"{cd_command} && {vagrant_command} && cd -"
+
+        system(command)
 
 
 @cli.command(
