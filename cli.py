@@ -269,8 +269,14 @@ def manage_aux(action, components):
         cd_command = f"cd {dir[component]}"
         vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
 
-        if component == "core_pr" and action == "start":
-            vagrant_command = f"vagrant {vagrant_action} manager && python check_master_status.py && {vagrant_command}"
+        if component == "core_pr":
+            vagrant_command_aux = vagrant_command
+            vagrant_command = f"vagrant {vagrant_action} manager"
+
+            if action == "start":
+                vagrant_command = " && python check_master_status.py"
+
+            vagrant_command = f" && {vagrant_command_aux}"
 
         command = f"{cd_command} && {vagrant_command} && cd -"
 
