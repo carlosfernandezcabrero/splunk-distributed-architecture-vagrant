@@ -274,9 +274,9 @@ def manage_aux(action, components):
             vagrant_command = f"vagrant {vagrant_action} manager"
 
             if action == "start":
-                vagrant_command = " && python check_master_status.py"
+                vagrant_command += " && python check_master_status.py"
 
-            vagrant_command = f" && {vagrant_command_aux}"
+            vagrant_command += f" && {vagrant_command_aux}"
 
         command = f"{cd_command} && {vagrant_command} && cd -"
 
