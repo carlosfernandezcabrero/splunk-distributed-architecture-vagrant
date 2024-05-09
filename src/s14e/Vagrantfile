@@ -51,6 +51,10 @@ Vagrant.configure("2") do |config|
             source: "./config/manager/server.conf",
             destination: "/usr/local/splunk/etc/system/local/server.conf"
 
+        manager.vm.provision "file",
+            source: "../../files_to_copy/manager",
+            destination: "/tmp"
+
         manager.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "" >> /usr/local/splunk/etc/system/local/server.conf
             echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
@@ -78,6 +82,10 @@ Vagrant.configure("2") do |config|
             source: "./config/pem/private.pem",
             destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
 
+        de_idx.vm.provision "file",
+            source: "../../files_to_copy/idx_de",
+            destination: "/tmp"
+
         de_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
             echo "serverName = de_idx" >> /usr/local/splunk/etc/system/local/server.conf
@@ -94,6 +102,10 @@ Vagrant.configure("2") do |config|
             vb.name = "de_sh"
         end
         
+        de_sh.vm.provision "file",
+            source: "../../files_to_copy/sh_de",
+            destination: "/tmp"
+
         de_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
             echo "serverName = de_sh" >> /usr/local/splunk/etc/system/local/server.conf
@@ -136,6 +148,10 @@ Vagrant.configure("2") do |config|
                 source: "./config/pem/private.pem",
                 destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
 
+            pr_idx.vm.provision "file",
+                source: "../../files_to_copy/idx_pr",
+                destination: "/tmp"
+
             pr_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
@@ -175,6 +191,10 @@ Vagrant.configure("2") do |config|
             pr_sh.vm.provider :virtualbox do |vb|
                 vb.name = display_name
             end
+
+            pr_sh.vm.provision "file",
+                source: "../../files_to_copy/sh_pr",
+                destination: "/tmp"
 
             pr_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
                 echo "[general]" > /usr/local/splunk/etc/system/local/server.conf

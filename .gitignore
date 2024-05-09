@@ -1,6 +1,8 @@
 .vagrant/
 downloads/*
 !downloads/.gitkeep
+files_to_copy/*
+!files_to_copy/.gitkeep
 *.log
 .DS_Store
 *.pem
