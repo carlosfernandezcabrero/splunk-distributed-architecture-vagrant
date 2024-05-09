@@ -6,8 +6,10 @@ downloads/*
 !downloads/.gitkeep
 
 # Files to copy to the VM
-files_to_copy/*
-!files_to_copy/.gitkeep
+
+# Scripts to run on the VM
+scripts_to_execute/*/*
+!scripts_to_execute/*/.gitkeep
 
 # Ignore log files
 *.log
