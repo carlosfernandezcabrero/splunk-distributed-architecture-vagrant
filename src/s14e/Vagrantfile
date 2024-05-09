@@ -183,6 +183,10 @@ Vagrant.configure("2") do |config|
         servers_de = "#{data_hash['de_idx']['ips'][0]}:9997"
         server_name = "hf"
 
+        hf.vm.provision "file",
+                source: "../../custom/hf",
+                destination: "/tmp"
+
         hf.vm.provision "execute_user_scripts",
                 type: "shell",
                 privileged: false,
