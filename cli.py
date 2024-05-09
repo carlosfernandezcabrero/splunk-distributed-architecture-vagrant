@@ -5,16 +5,13 @@ from os import path, system
 import click
 from tabulate import tabulate
 
+################################################################################
+# Constants
+
 BASE_IP = "192.168.56."
-PR_SERVER_GROUPS_IP_RANGE = {"idx": 2, "sh": 1}
-SERVER_GROUPS_ABBR = {
-    "idx": "Indexer",
-    "sh": "Search Head",
-    "fwd": "Universal Forwarder",
-    "hf": "Heavy Forwarder",
-    "lb": "Prod Search Heads Load Balancer",
-    "manager": "Manager",
-}
+
+# End Constants section
+################################################################################
 
 ################################################################################
 # Paths
@@ -29,6 +26,18 @@ USER_CONFIG_PATH = "user-config.json"
 # End Paths section
 ################################################################################
 
+################################################################################
+# Server groups configurations
+
+PR_SERVER_GROUPS_IP_RANGE = {"idx": 2, "sh": 1}
+SERVER_GROUPS_ABBR = {
+    "idx": "Indexer",
+    "sh": "Search Head",
+    "fwd": "Universal Forwarder",
+    "hf": "Heavy Forwarder",
+    "lb": "Prod Search Heads Load Balancer",
+    "manager": "Manager",
+}
 SERVER_GROUPS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
@@ -72,6 +81,8 @@ SERVER_GROUPS_CONFIG = {
     },
 }
 
+# End Server groups configurations section
+################################################################################
 
 ################################################################################
 # Helper Functions
