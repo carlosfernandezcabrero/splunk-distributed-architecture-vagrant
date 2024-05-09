@@ -49,11 +49,11 @@ Las credenciales del usuario de instalación de Splunk son las siguientes:
   python cli.py config-base-image -i <imagen_base>
   ```
 
-- Descargar los comprimidos TGZ para Universal Forwarder y Splunk Enterprise con la version que queramos. Situar estos TGZ en el directorio `common/downloads/` con los siguientes nombres:
+- Descargar los comprimidos TGZ para Universal Forwarder y Splunk Enterprise con la version que queramos. Situar estos TGZ en el directorio `downloads` con los siguientes nombres:
   - Para el Universal Forwarder el TGZ se debe llamar `universalforwarder.tgz`.
   - Para el Splunk Enterprise el TGZ se debe llamar `splunk-enterprise.tgz`.
 
-  En la carpeta `common/downloads/` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
+  En la carpeta `downloads` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
 
 ## Uso
 
@@ -149,16 +149,16 @@ python config-instances --help
 
 ### Vagranfiles
 
-- `s14e/Vagrantfile`: Vagrantfile para crear las siguientes maquinas:
+- `src/s14e/Vagrantfile`: Vagrantfile para crear las siguientes maquinas:
   - Indexadores de producción
   - Search heads de producción
   - Manager
   - Indexador de desarrollo
   - Search head de desarrollo
   - Heavy Forwarder
-- `l10r/Vagrantfile`: Vagrantfile que crea el balanceador de carga para los search heads de producción.
-- `u16f/Vagrantfile`: Vagrantfile que crea los forwarders.
+- `src/l10r/Vagrantfile`: Vagrantfile que crea el balanceador de carga para los search heads de producción.
+- `src/u16f/Vagrantfile`: Vagrantfile que crea los forwarders.
 
 ### Archivos de configuración
 
-- `config.json`: Archivo que contiene toda la parametrización de la arquitectura. Se puede usar para modificar los parámetros de la arquitectura como el numero de indexadores de producción. También las IP's asignadas a las maquinas virtuales que se crean. Este archivo consta de un objeto raíz y varios sub-objetos que representan cada componente de la infraestructura. Dentro de cada componente encontramos una array IP's. Si hay 5 IP's se crearan cinco maquina virtuales para ese componente, cada una con una IP del array.
+- `src/config.json`: Archivo que contiene toda la parametrización de la arquitectura por defecto.
