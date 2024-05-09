@@ -8,7 +8,7 @@
   - [🔑 Credenciales](#-credenciales)
   - [Primer uso](#primer-uso)
   - [Uso](#uso)
-    - [Tu primera vez levantando un componente de la infraestructura 🚀](#tu-primera-vez-levantando-un-componente-de-la-infraestructura-)
+    - [Tu primera vez levantando un grupo de servidores de la infraestructura 🚀](#tu-primera-vez-levantando-un-grupo-de-servidores-de-la-infraestructura-)
     - [Comandos](#comandos)
       - [manage](#manage)
       - [info](#info)
@@ -16,9 +16,10 @@
       - [connect](#connect)
       - [config-instances](#config-instances)
   - [Especificaciones técnicas por defecto de la infraestructura](#especificaciones-técnicas-por-defecto-de-la-infraestructura)
-    - [Componentes](#componentes)
+    - [Grupos de servidores](#grupos-de-servidores)
     - [Vagranfiles](#vagranfiles)
     - [Archivos de configuración](#archivos-de-configuración)
+  - [Terminología](#terminología)
 
 ## Requisitos
 
@@ -49,11 +50,11 @@ Las credenciales del usuario de instalación de Splunk son las siguientes:
   python cli.py config-base-image -i <imagen_base>
   ```
 
-- Descargar los comprimidos TGZ para Universal Forwarder y Splunk Enterprise con la version que queramos. Situar estos TGZ en el directorio `common/downloads/` con los siguientes nombres:
+- Descargar los comprimidos TGZ para Universal Forwarder y Splunk Enterprise con la version que queramos. Situar estos TGZ en el directorio `downloads` con los siguientes nombres:
   - Para el Universal Forwarder el TGZ se debe llamar `universalforwarder.tgz`.
   - Para el Splunk Enterprise el TGZ se debe llamar `splunk-enterprise.tgz`.
 
-  En la carpeta `common/downloads/` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
+  En la carpeta `downloads` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
 
 ## Uso
 
@@ -71,17 +72,23 @@ python cli.py <comando> --help
 
 También se puede usar con los comandos de Vagrant directamente. Para saber mas visitar <https://developer.hashicorp.com/vagrant/tutorials/getting-started/getting-started-up>. Para saber mas sobre los Vagrantfiles que hay en cada carpeta del repo ir a [Vagranfiles](#vagranfiles).
 
-### Tu primera vez levantando un componente de la infraestructura 🚀
+### Tu primera vez levantando un grupo de servidores de la infraestructura 🚀
 
 ```bash
 python cli.py manage --action=start core_de
+```
+
+Podemos levantar varios grupos de servidores al mismo tiempo utilizando el comando de esta forma:
+
+```bash
+python cli.py manage --action=start core_de core_pr
 ```
 
 ### Comandos
 
 #### manage
 
-Este comando sirve para manejar el estado de las componentes de la arquitectura. Con este comando podemos pararlos, levantarlos o destruirlos.
+Este comando sirve para manejar el estado de los grupos de servidores de la arquitectura. Con este comando podemos pararlos, levantarlos o destruirlos.
 
 Para obtener mas información ejecutar:
 
@@ -123,7 +130,7 @@ python connect --help
 
 #### config-instances
 
-Este comando sirve para configurar cuantas instancias queremos de los siguientes componentes:
+Este comando sirve para configurar cuantas instancias queremos de los siguientes clusters en producción:
 
 - Forwarders
 - Indexadores
@@ -139,7 +146,7 @@ python config-instances --help
 
 ![Architecture diagram](readme/images/general-archiecture.png)
 
-### Componentes
+### Grupos de servidores
 
 - core_pr: Incluye los indexadores de producción, search heads de producción y el manager.
 - core_de: Incluye el indexador de desarrollo y el search head de desarrollo.
@@ -149,16 +156,22 @@ python config-instances --help
 
 ### Vagranfiles
 
-- `s14e/Vagrantfile`: Vagrantfile para crear las siguientes maquinas:
+- `src/s14e/Vagrantfile`: Vagrantfile para crear las siguientes maquinas:
   - Indexadores de producción
   - Search heads de producción
   - Manager
   - Indexador de desarrollo
   - Search head de desarrollo
   - Heavy Forwarder
-- `l10r/Vagrantfile`: Vagrantfile que crea el balanceador de carga para los search heads de producción.
-- `u16f/Vagrantfile`: Vagrantfile que crea los forwarders.
+- `src/l10r/Vagrantfile`: Vagrantfile que crea el balanceador de carga para los search heads de producción.
+- `src/u16f/Vagrantfile`: Vagrantfile que crea los forwarders.
 
 ### Archivos de configuración
 
-- `config.json`: Archivo que contiene toda la parametrización de la arquitectura. Se puede usar para modificar los parámetros de la arquitectura como el numero de indexadores de producción. También las IP's asignadas a las maquinas virtuales que se crean. Este archivo consta de un objeto raíz y varios sub-objetos que representan cada componente de la infraestructura. Dentro de cada componente encontramos una array IP's. Si hay 5 IP's se crearan cinco maquina virtuales para ese componente, cada una con una IP del array.
+- `src/config.json`: Archivo que contiene toda la parametrización de la arquitectura por defecto.
+- `user-config.json`: Archivo que contiene toda la parametrización personalizada del usuario de la arquitectura. Este archivo se puede manipular por nosotros mismos y no se subirá al repositorio.
+
+## Terminología
+
+- Clusters: Grupo de instancias del mismo tipo.
+- Grupo de servidores: Grupo de varios clusters o instancias.

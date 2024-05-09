@@ -3,7 +3,12 @@
 
 require 'json'
 
-data_file = File.read('../config.json')
+if File.exist?('../../user-config.json')
+    data_file = File.read('../../user-config.json')
+else
+    data_file = File.read('../config.json')
+end
+
 data_hash = JSON.parse(data_file)
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
@@ -19,7 +24,7 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.provision "file",
-        source: "../common/downloads/universalforwarder.tgz",
+        source: "../../downloads/universalforwarder.tgz",
         destination: "/tmp/universalforwarder.tgz"
 
     config.vm.provision "shell",
@@ -56,7 +61,7 @@ Vagrant.configure("2") do |config|
 
             fwd.vm.provision "shell" do |s|
                 s.privileged = false
-                s.path = "../common/config/generate_forwarder_conf.sh"
+                s.path = "../common/scripts/generate_forwarder_conf.sh"
                 s.args = [servers_pr, servers_de, display_name, "splunkforwarder"]
             end
         end

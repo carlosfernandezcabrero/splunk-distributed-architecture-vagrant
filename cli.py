@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import json
 import re
 from os import path, system
@@ -5,9 +7,25 @@ from os import path, system
 import click
 from tabulate import tabulate
 
+################################################################################
+# Paths
+
+SRC_DIR = "src"
+SPLUNK_ENTERPRISE_DIR = path.join(SRC_DIR, "s14e")
+UNIVERSAL_FORWARDER_DIR = path.join(SRC_DIR, "u16f")
+LOAD_BALANCER_DIR = path.join(SRC_DIR, "l10r")
+DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
+USER_CONFIG_PATH = "user-config.json"
+
+# End Paths section
+################################################################################
+
+################################################################################
+# Constants
+
 BASE_IP = "192.168.56."
-PR_COMPONENTS_IP_RANGE = {"idx": 2, "sh": 1}
-COMPONENTS_ABBR = {
+PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1}
+INSTANCES_DESCRIPTIONS = {
     "idx": "Indexer",
     "sh": "Search Head",
     "fwd": "Universal Forwarder",
@@ -15,10 +33,7 @@ COMPONENTS_ABBR = {
     "lb": "Prod Search Heads Load Balancer",
     "manager": "Manager",
 }
-SPLUNK_ENTERPRISE_DIR = "s14e"
-UNIVERSAL_FORWARDER_DIR = "u16f"
-LOAD_BALANCER_DIR = "l10r"
-COMPONENTS_CONFIG = {
+CLUSTERS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
@@ -61,6 +76,49 @@ COMPONENTS_CONFIG = {
     },
 }
 
+# End Constants section
+################################################################################
+
+################################################################################
+# Helper Functions
+
+
+def read_default_config():
+    try:
+        with open(DEFAULT_CONFIG_PATH) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def read_user_config():
+    try:
+        with open(USER_CONFIG_PATH) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def get_config():
+    user_config = read_user_config()
+    default_config = read_default_config()
+
+    return default_config if user_config == {} else user_config
+
+
+def write_config(config):
+    if not path.exists(USER_CONFIG_PATH):
+        config = {**read_default_config(), **config}
+    else:
+        config = {**read_user_config(), **config}
+
+    with open(USER_CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+
+
+# End Helper Functions section
+################################################################################
+
 
 @click.group()
 def cli():
@@ -74,21 +132,19 @@ def cli():
     help="Base image to be used for virtual machines",
 )
 def config_base_image(image):
-    prev_config = json.load(open("config.json")) if path.exists("config.json") else {}
-    prev_config.update({"base_config": {"box": image}})
+    write_config({"base_config": {"box": image}})
 
-    with open("config.json", "w") as f:
-        json.dump(prev_config, f, indent=4)
+    click.echo(f"\nBase image configured to {image}\n")
 
 
 @cli.command(
-    help="Configure number of production component instances. Apply to idx and sh production components."
+    help="Configure number of production instances. Apply to production indexers and search heads and also to the forwarders."
 )
 @click.option(
-    "--component",
+    "--cluster",
     "-c",
     type=click.Choice(["pr_idx", "pr_sh", "fwd"], case_sensitive=False),
-    help="Production component name to be scaled",
+    help="Name of the production cluster to scale",
 )
 @click.option(
     "--instances",
@@ -98,30 +154,25 @@ def config_base_image(image):
     type=click.IntRange(min=2),
     help="Number of production instances to be scaled",
 )
-def config_instances(component, instances):
-    component_without_prefix = component.replace("pr_", "")
-
+def config_instances(cluster, instances):
+    cluster_name = cluster
+    cluster_without_env = cluster_name.replace("pr_", "")
     config_to_add = {
-        component: {
+        cluster_name: {
             "ips": [
-                f"{BASE_IP}{PR_COMPONENTS_IP_RANGE[component_without_prefix]}{n}"
+                f"{BASE_IP}{PR_INSTANCES_IP_RANGE[cluster_without_env]}{n}"
                 for n in range(1, instances + 1)
             ],
         }
     }
-    try:
-        prev_config = json.load(open("config.json"))
-    except FileNotFoundError:
-        prev_config = {}
+    prev_config = get_config()
+    prev_ips = prev_config.get(cluster_name, {}).get("ips", [])
+    new_ips = config_to_add[cluster_name]["ips"]
+    new_instances = [
+        ip for ip in config_to_add[cluster_name]["ips"] if ip not in prev_ips
+    ]
 
-    prev_ips = prev_config.get(component, {}).get("ips", [])
-    new_ips = config_to_add[component]["ips"]
-    new_instances = [ip for ip in config_to_add[component]["ips"] if ip not in prev_ips]
-
-    prev_config.update(config_to_add)
-
-    with open("config.json", "w") as f:
-        json.dump(prev_config, f, indent=4)
+    write_config(config_to_add)
 
     if len(new_ips) > len(prev_ips):
         click.echo("\nNew instances added to configuration:\n")
@@ -130,7 +181,7 @@ def config_instances(component, instances):
                 [
                     [
                         ip,
-                        f"{component}{ip[-1]}",
+                        f"{cluster_name}{ip[-1]}",
                     ]
                     for ip in new_instances
                 ],
@@ -141,11 +192,11 @@ def config_instances(component, instances):
         click.echo()
     elif len(new_ips) < len(prev_ips):
         click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances scaled down\n"
+            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
         )
     else:
         click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances already configured.\n"
+            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances already configured.\n"
         )
 
 
@@ -162,32 +213,31 @@ def config_instances(component, instances):
 )
 def info(about):
     def vms():
-        try:
-            config = json.load(open("config.json"))
-        except FileNotFoundError:
-            config = {}
+        config = get_config()
 
         data_to_show = []
-        for component, data in config.items():
-            component_config = COMPONENTS_CONFIG.get(component, {})
+        for cluster_name, data in config.items():
+            cluster_config = CLUSTERS_CONFIG.get(cluster_name, {})
 
             for ip in data.get("ips", []):
-                type = component.replace("pr_", "").replace("de_", "")
-                environment = component_config["env"]
+                cluster_name_without_env = cluster_name.replace("pr_", "").replace(
+                    "de_", ""
+                )
+                environment = cluster_config["env"]
 
                 vm_name = (
-                    f"{component}{ip[-1]}"
-                    if environment == "PR" or type == "fwd"
-                    else component
+                    f"{cluster_name}{ip[-1]}"
+                    if environment == "PR" or cluster_name_without_env == "fwd"
+                    else cluster_name
                 )
 
                 data_to_show.append(
                     [
                         ip,
                         vm_name,
-                        COMPONENTS_ABBR[type],
+                        INSTANCES_DESCRIPTIONS[cluster_name_without_env],
                         environment,
-                        component_config["web"](ip),
+                        cluster_config["web"](ip),
                     ]
                 )
 
@@ -211,7 +261,7 @@ def info(about):
 
 
 @cli.command(
-    help='Performs actions on the components core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all components with argument "all".'
+    help='Performs actions on the server groups core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all server groups with argument "all".'
 )
 @click.option(
     "--action",
@@ -220,19 +270,19 @@ def info(about):
     help="Action to perform",
 )
 @click.argument(
-    "components",
+    "server_groups",
     type=click.Choice(
         ["core_pr", "core_de", "fwd", "hf", "lb", "all"], case_sensitive=False
     ),
     nargs=-1,
     required=True,
 )
-def manage(action, components):
-    manage_aux(action, components)
+def manage(action, server_groups):
+    manage_aux(action, server_groups)
 
 
-def manage_aux(action, components):
-    config = json.load(open("config.json"))
+def manage_aux(action, server_groups):
+    config = get_config()
 
     pr_idx_ips = config["pr_idx"]["ips"]
     pr_sh_ips = config["pr_sh"]["ips"]
@@ -259,17 +309,17 @@ def manage_aux(action, components):
 
     vagrant_actions = {"start": "up", "stop": "halt", "destroy": "destroy"}
 
-    for component in components:
-        if component == "all":
+    for server_group in server_groups:
+        if server_group == "all":
             manage_aux(action, ["core_de", "core_pr", "lb", "hf", "fwd"])
             break
 
-        v_servers_names = " ".join(servers[component])
+        v_servers_names = " ".join(servers[server_group])
         vagrant_action = vagrant_actions[action]
-        cd_command = f"cd {dir[component]}"
+        cd_command = f"cd {dir[server_group]}"
         vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
 
-        if component == "core_pr":
+        if server_group == "core_pr":
             vagrant_command_aux = vagrant_command
             vagrant_command = f"vagrant {vagrant_action} manager"
 
@@ -290,11 +340,11 @@ def manage_aux(action, components):
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
-    component = re.sub(r"\d", "", vm)
-    component_config = COMPONENTS_CONFIG[component]
-    component_dir = component_config["dir"]
+    cluster_name = re.sub(r"\d", "", vm)
+    cluster_config = CLUSTERS_CONFIG[cluster_name]
+    cluster_dir = cluster_config["dir"]
 
-    system(f"cd {component_dir} && vagrant ssh {vm} && cd -")
+    system(f"cd {cluster_dir} && vagrant ssh {vm} && cd -")
 
 
 if __name__ == "__main__":
