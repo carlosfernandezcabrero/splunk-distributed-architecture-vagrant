@@ -58,17 +58,18 @@ Las credenciales del usuario de instalación de Splunk son las siguientes:
 
   En la carpeta `downloads` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
 
-## Personalizaciones
+## Copiar archivos y ejecutar scripts en las instancias cuando se construyen
 
-### Copiar archivos a las instancias cuando se crean
+Para copiar archivos y ejecutar scripts en las instancias cuando se construyen tenemos la carpeta `custom` en la raíz del repositorio. Dentro de esta carpeta tenemos varias carpetas que corresponden con el cluster donde se van a copiar archivos o ejecutar los scripts. Dependiendo de que acción queramos realizar tendremos que hacer los siguiente:
 
-Para copiar archivos a las instancias cuando se crean debemos poner los archivos en las carpetas dentro de `files_to_copy`. Cada carpeta dentro de `files_to_copy` se asocia con un solo cluster donde se van a copiar los ficheros. A continuación se especifica el cluster con que se asocia cada carpeta:
+- Copiar archivos
 
-- idx_de: Indexador de desarrollo
-- idx_pr: Indexadores de producción
-- sh_de: Search head de desarrollo
-- sh_pr: Search heads de producción
-- manager: Manager
+  Copiar los archivos dentro del directorio `files_to_copy`.
+- Ejecutar scripts
+
+  Copiar los scripts dentro de la carpeta `scripts_to_execute`. Estos scripts se ejecutaran en orden lexicográfico y antes de levantar el producto Splunk.
+
+Ambos directorios, `files_to_copy` y `scripts_to_execute`, se copian a la carpeta `/tmp` en las instancias.
 
 ## Uso
 
