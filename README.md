@@ -77,6 +77,12 @@ También se puede usar con los comandos de Vagrant directamente. Para saber mas 
 python cli.py manage --action=start core_de
 ```
 
+Podemos levantar varios grupos de servidores al mismo tiempo utilizando el comando de esta forma:
+
+```bash
+python cli.py manage --action=start core_de core_pr
+```
+
 ### Comandos
 
 #### manage
