@@ -1,25 +1,11 @@
 # Ignore the .vagrant directory
 .vagrant/
 
-# Downloads directory
-downloads/*
-!downloads/.gitkeep
-
-# Files to copy to the VM
-
-# Scripts to run on the VM
-scripts_to_execute/*/*
-!scripts_to_execute/*/.gitkeep
-
 # Ignore log files
 *.log
 
 # Ignore MacOs files
 .DS_Store
-
-# Ignore pem files
-**/pem/*
-!**/pem/.gitkeep
 
 # Ignore user configuration file
 user-config.json
