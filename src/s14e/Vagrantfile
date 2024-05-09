@@ -24,7 +24,7 @@ Vagrant.configure("2") do |config|
     end
 
     config.vm.provision "file",
-        source: "../common/downloads/splunk-enterprise.tgz",
+        source: "../../downloads/splunk-enterprise.tgz",
         destination: "/tmp/splunk-enterprise.tgz"
 
     config.vm.provision "shell",
