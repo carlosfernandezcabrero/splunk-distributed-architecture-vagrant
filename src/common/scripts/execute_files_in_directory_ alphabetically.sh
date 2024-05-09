@@ -1,0 +1,1 @@
+find /tmp/scripts_to_execute -type f | sort | xargs -I {} sudo ./{}

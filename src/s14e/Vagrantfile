@@ -55,6 +55,11 @@ Vagrant.configure("2") do |config|
             source: "../../custom/manager",
             destination: "/tmp"
 
+        manager.vm.provision "execute_user_scripts",
+            type: "shell",
+            privileged: false,
+            path: "../common/scripts/execute_user_scripts.sh"
+
         manager.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "" >> /usr/local/splunk/etc/system/local/server.conf
             echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
@@ -86,6 +91,11 @@ Vagrant.configure("2") do |config|
             source: "../../custom/idx_de",
             destination: "/tmp"
 
+        de_idx.vm.provision "execute_user_scripts",
+            type: "shell",
+            privileged: false,
+            path: "../common/scripts/execute_user_scripts.sh"
+
         de_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
             echo "serverName = de_idx" >> /usr/local/splunk/etc/system/local/server.conf
@@ -105,6 +115,11 @@ Vagrant.configure("2") do |config|
         de_sh.vm.provision "file",
             source: "../../custom/sh_de",
             destination: "/tmp"
+
+        de_sh.vm.provision "execute_user_scripts",
+            type: "shell",
+            privileged: false,
+            path: "../common/scripts/execute_user_scripts.sh"
 
         de_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
@@ -152,6 +167,11 @@ Vagrant.configure("2") do |config|
                 source: "../../custom/idx_pr",
                 destination: "/tmp"
 
+            pr_idx.vm.provision "execute_user_scripts",
+                type: "shell",
+                privileged: false,
+                path: "../common/scripts/execute_user_scripts.sh"
+
             pr_idx.vm.provision "shell", privileged: false, inline: <<-SHELL
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
@@ -195,6 +215,11 @@ Vagrant.configure("2") do |config|
             pr_sh.vm.provision "file",
                 source: "../../custom/sh_pr",
                 destination: "/tmp"
+
+            pr_sh.vm.provision "execute_user_scripts",
+                type: "shell",
+                privileged: false,
+                path: "../common/scripts/execute_user_scripts.sh"
 
             pr_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
                 echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
