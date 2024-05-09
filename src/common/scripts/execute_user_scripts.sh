@@ -1,1 +1,3 @@
-find /tmp/scripts_to_execute -type f | sort | xargs -I {} sudo ./{}
+for i in $(find /tmp/scripts_to_execute -type f | sort | grep -v ".gitignore"); do
+    $i
+done
