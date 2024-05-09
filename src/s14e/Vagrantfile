@@ -127,7 +127,6 @@ Vagrant.configure("2") do |config|
 
             /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
             cp /usr/local/splunk/etc/auth/distServerKeys/*.pem /vagrant/config/pem/
-            /usr/local/splunk/bin/splunk stop
         SHELL
     end
 
@@ -237,7 +236,6 @@ Vagrant.configure("2") do |config|
                 then
                     /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
                     /usr/local/splunk/bin/splunk bootstrap shcluster-captain -servers_list "https://#{data_hash['pr_sh']['ips'].join(':8089,https://')}:8089" -auth admin:admin1234
-                    /usr/local/splunk/bin/splunk stop
                 fi
             SHELL
         end
