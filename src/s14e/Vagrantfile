@@ -80,12 +80,8 @@ Vagrant.configure("2") do |config|
             destination: "/usr/local/splunk/etc/system/local/inputs.conf"
 
         de_idx.vm.provision "file",
-            source: "./config/pem/trusted.pem",
-            destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/trusted.pem"
-        
-        de_idx.vm.provision "file",
-            source: "./config/pem/private.pem",
-            destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
+            source: "./config/pem",
+            destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh"
 
         de_idx.vm.provision "file",
             source: "../../custom/idx_de",
@@ -156,12 +152,8 @@ Vagrant.configure("2") do |config|
                 destination: "/usr/local/splunk/etc/system/local/server.conf"
 
             pr_idx.vm.provision "file",
-                source: "./config/pem/trusted.pem",
-                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/trusted.pem"
-            
-            pr_idx.vm.provision "file",
-                source: "./config/pem/private.pem",
-                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh/private.pem"
+                source: "./config/pem",
+                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh"
 
             pr_idx.vm.provision "file",
                 source: "../../custom/idx_pr",
