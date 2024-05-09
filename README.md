@@ -19,6 +19,7 @@
     - [Grupos de servidores](#grupos-de-servidores)
     - [Vagranfiles](#vagranfiles)
     - [Archivos de configuración](#archivos-de-configuración)
+  - [Terminología](#terminología)
 
 ## Requisitos
 
@@ -169,3 +170,8 @@ python config-instances --help
 
 - `src/config.json`: Archivo que contiene toda la parametrización de la arquitectura por defecto.
 - `user-config.json`: Archivo que contiene toda la parametrización personalizada del usuario de la arquitectura. Este archivo se puede manipular por nosotros mismos y no se subirá al repositorio.
+
+## Terminología
+
+- Clusters: Grupo de instancias del mismo tipo.
+- Grupo de servidores: Grupo de varios clusters o instancias.
