@@ -8,7 +8,7 @@
   - [🔑 Credenciales](#-credenciales)
   - [Primer uso](#primer-uso)
   - [Uso](#uso)
-    - [Tu primera vez levantando un componente de la infraestructura 🚀](#tu-primera-vez-levantando-un-componente-de-la-infraestructura-)
+    - [Tu primera vez levantando un grupo de servidores de la infraestructura 🚀](#tu-primera-vez-levantando-un-grupo-de-servidores-de-la-infraestructura-)
     - [Comandos](#comandos)
       - [manage](#manage)
       - [info](#info)
@@ -16,7 +16,7 @@
       - [connect](#connect)
       - [config-instances](#config-instances)
   - [Especificaciones técnicas por defecto de la infraestructura](#especificaciones-técnicas-por-defecto-de-la-infraestructura)
-    - [Componentes](#componentes)
+    - [Grupos de servidores](#grupos-de-servidores)
     - [Vagranfiles](#vagranfiles)
     - [Archivos de configuración](#archivos-de-configuración)
 
@@ -71,7 +71,7 @@ python cli.py <comando> --help
 
 También se puede usar con los comandos de Vagrant directamente. Para saber mas visitar <https://developer.hashicorp.com/vagrant/tutorials/getting-started/getting-started-up>. Para saber mas sobre los Vagrantfiles que hay en cada carpeta del repo ir a [Vagranfiles](#vagranfiles).
 
-### Tu primera vez levantando un componente de la infraestructura 🚀
+### Tu primera vez levantando un grupo de servidores de la infraestructura 🚀
 
 ```bash
 python cli.py manage --action=start core_de
@@ -81,7 +81,7 @@ python cli.py manage --action=start core_de
 
 #### manage
 
-Este comando sirve para manejar el estado de las componentes de la arquitectura. Con este comando podemos pararlos, levantarlos o destruirlos.
+Este comando sirve para manejar el estado de los grupos de servidores de la arquitectura. Con este comando podemos pararlos, levantarlos o destruirlos.
 
 Para obtener mas información ejecutar:
 
@@ -123,7 +123,7 @@ python connect --help
 
 #### config-instances
 
-Este comando sirve para configurar cuantas instancias queremos de los siguientes componentes:
+Este comando sirve para configurar cuantas instancias queremos de los siguientes grupos de servidores:
 
 - Forwarders
 - Indexadores
@@ -139,7 +139,7 @@ python config-instances --help
 
 ![Architecture diagram](readme/images/general-archiecture.png)
 
-### Componentes
+### Grupos de servidores
 
 - core_pr: Incluye los indexadores de producción, search heads de producción y el manager.
 - core_de: Incluye el indexador de desarrollo y el search head de desarrollo.

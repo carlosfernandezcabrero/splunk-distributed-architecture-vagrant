@@ -6,8 +6,8 @@ import click
 from tabulate import tabulate
 
 BASE_IP = "192.168.56."
-PR_COMPONENTS_IP_RANGE = {"idx": 2, "sh": 1}
-COMPONENTS_ABBR = {
+PR_SERVER_GROUPS_IP_RANGE = {"idx": 2, "sh": 1}
+SERVER_GROUPS_ABBR = {
     "idx": "Indexer",
     "sh": "Search Head",
     "fwd": "Universal Forwarder",
@@ -29,7 +29,7 @@ USER_CONFIG_PATH = "user-config.json"
 # End Paths section
 ################################################################################
 
-COMPONENTS_CONFIG = {
+SERVER_GROUPS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
@@ -132,13 +132,13 @@ def config_base_image(image):
 
 
 @cli.command(
-    help="Configure number of production component instances. Apply to idx and sh production components."
+    help="Configure number of production instances. Apply to production indexers and search heads and also to the forwarders."
 )
 @click.option(
-    "--component",
+    "--server-group",
     "-c",
     type=click.Choice(["pr_idx", "pr_sh", "fwd"], case_sensitive=False),
-    help="Production component name to be scaled",
+    help="Name of the production server group to scale",
 )
 @click.option(
     "--instances",
@@ -148,20 +148,22 @@ def config_base_image(image):
     type=click.IntRange(min=2),
     help="Number of production instances to be scaled",
 )
-def config_instances(component, instances):
-    component_without_prefix = component.replace("pr_", "")
+def config_instances(server_group, instances):
+    server_group_without_prefix = server_group.replace("pr_", "")
     config_to_add = {
-        component: {
+        server_group: {
             "ips": [
-                f"{BASE_IP}{PR_COMPONENTS_IP_RANGE[component_without_prefix]}{n}"
+                f"{BASE_IP}{PR_SERVER_GROUPS_IP_RANGE[server_group_without_prefix]}{n}"
                 for n in range(1, instances + 1)
             ],
         }
     }
     prev_config = get_config()
-    prev_ips = prev_config.get(component, {}).get("ips", [])
-    new_ips = config_to_add[component]["ips"]
-    new_instances = [ip for ip in config_to_add[component]["ips"] if ip not in prev_ips]
+    prev_ips = prev_config.get(server_group, {}).get("ips", [])
+    new_ips = config_to_add[server_group]["ips"]
+    new_instances = [
+        ip for ip in config_to_add[server_group]["ips"] if ip not in prev_ips
+    ]
 
     write_config(config_to_add)
 
@@ -172,7 +174,7 @@ def config_instances(component, instances):
                 [
                     [
                         ip,
-                        f"{component}{ip[-1]}",
+                        f"{server_group}{ip[-1]}",
                     ]
                     for ip in new_instances
                 ],
@@ -183,11 +185,11 @@ def config_instances(component, instances):
         click.echo()
     elif len(new_ips) < len(prev_ips):
         click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances scaled down\n"
+            f"\nProduction {SERVER_GROUPS_ABBR[server_group_without_prefix]} instances scaled down\n"
         )
     else:
         click.echo(
-            f"\nProduction {COMPONENTS_ABBR[component_without_prefix]} instances already configured.\n"
+            f"\nProduction {SERVER_GROUPS_ABBR[server_group_without_prefix]} instances already configured.\n"
         )
 
 
@@ -207,26 +209,26 @@ def info(about):
         config = get_config()
 
         data_to_show = []
-        for component, data in config.items():
-            component_config = COMPONENTS_CONFIG.get(component, {})
+        for server_group, data in config.items():
+            server_group_config = SERVER_GROUPS_CONFIG.get(server_group, {})
 
             for ip in data.get("ips", []):
-                type = component.replace("pr_", "").replace("de_", "")
-                environment = component_config["env"]
+                type = server_group.replace("pr_", "").replace("de_", "")
+                environment = server_group_config["env"]
 
                 vm_name = (
-                    f"{component}{ip[-1]}"
+                    f"{server_group}{ip[-1]}"
                     if environment == "PR" or type == "fwd"
-                    else component
+                    else server_group
                 )
 
                 data_to_show.append(
                     [
                         ip,
                         vm_name,
-                        COMPONENTS_ABBR[type],
+                        SERVER_GROUPS_ABBR[type],
                         environment,
-                        component_config["web"](ip),
+                        server_group_config["web"](ip),
                     ]
                 )
 
@@ -250,7 +252,7 @@ def info(about):
 
 
 @cli.command(
-    help='Performs actions on the components core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all components with argument "all".'
+    help='Performs actions on the server groups core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all server groups with argument "all".'
 )
 @click.option(
     "--action",
@@ -259,18 +261,18 @@ def info(about):
     help="Action to perform",
 )
 @click.argument(
-    "components",
+    "server_groups",
     type=click.Choice(
         ["core_pr", "core_de", "fwd", "hf", "lb", "all"], case_sensitive=False
     ),
     nargs=-1,
     required=True,
 )
-def manage(action, components):
-    manage_aux(action, components)
+def manage(action, server_groups):
+    manage_aux(action, server_groups)
 
 
-def manage_aux(action, components):
+def manage_aux(action, server_groups):
     config = get_config()
 
     pr_idx_ips = config["pr_idx"]["ips"]
@@ -298,17 +300,17 @@ def manage_aux(action, components):
 
     vagrant_actions = {"start": "up", "stop": "halt", "destroy": "destroy"}
 
-    for component in components:
-        if component == "all":
+    for server_group in server_groups:
+        if server_group == "all":
             manage_aux(action, ["core_de", "core_pr", "lb", "hf", "fwd"])
             break
 
-        v_servers_names = " ".join(servers[component])
+        v_servers_names = " ".join(servers[server_group])
         vagrant_action = vagrant_actions[action]
-        cd_command = f"cd {dir[component]}"
+        cd_command = f"cd {dir[server_group]}"
         vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
 
-        if component == "core_pr":
+        if server_group == "core_pr":
             vagrant_command_aux = vagrant_command
             vagrant_command = f"vagrant {vagrant_action} manager"
 
@@ -329,11 +331,11 @@ def manage_aux(action, components):
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
-    component = re.sub(r"\d", "", vm)
-    component_config = COMPONENTS_CONFIG[component]
-    component_dir = component_config["dir"]
+    server_group = re.sub(r"\d", "", vm)
+    server_group_config = SERVER_GROUPS_CONFIG[server_group]
+    server_group_dir = server_group_config["dir"]
 
-    system(f"cd {component_dir} && vagrant ssh {vm} && cd -")
+    system(f"cd {server_group_dir} && vagrant ssh {vm} && cd -")
 
 
 if __name__ == "__main__":
