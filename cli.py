@@ -90,7 +90,24 @@ def read_user_config():
             return json.load(f)
     except FileNotFoundError:
         return {}
-    
+
+
+def get_config():
+    user_config = read_user_config()
+    default_config = read_default_config()
+
+    return default_config if user_config == {} else user_config
+
+
+def write_config(config):
+    if not path.exists(USER_CONFIG_PATH):
+        config = {**read_default_config(), **config}
+    else:
+        config = {**read_user_config(), **config}
+
+    with open(USER_CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+
 
 # End Helper Functions section
 ################################################################################
@@ -108,11 +125,9 @@ def cli():
     help="Base image to be used for virtual machines",
 )
 def config_base_image(image):
-    prev_config = read_default_config()
-    prev_config.update({"base_config": {"box": image}})
+    write_config({"base_config": {"box": image}})
 
-    with open("config.json", "w") as f:
-        json.dump(prev_config, f, indent=4)
+    click.echo(f"\nBase image configured to {image}\n")
 
 
 @cli.command(
@@ -143,15 +158,12 @@ def config_instances(component, instances):
             ],
         }
     }
-    prev_config = read_default_config()
+    prev_config = get_config()
     prev_ips = prev_config.get(component, {}).get("ips", [])
     new_ips = config_to_add[component]["ips"]
     new_instances = [ip for ip in config_to_add[component]["ips"] if ip not in prev_ips]
 
-    prev_config.update(config_to_add)
-
-    with open("config.json", "w") as f:
-        json.dump(prev_config, f, indent=4)
+    write_config(config_to_add)
 
     if len(new_ips) > len(prev_ips):
         click.echo("\nNew instances added to configuration:\n")
@@ -192,7 +204,7 @@ def config_instances(component, instances):
 )
 def info(about):
     def vms():
-        config = read_default_config()
+        config = get_config()
 
         data_to_show = []
         for component, data in config.items():
@@ -259,7 +271,7 @@ def manage(action, components):
 
 
 def manage_aux(action, components):
-    config = read_default_config()
+    config = get_config()
 
     pr_idx_ips = config["pr_idx"]["ips"]
     pr_sh_ips = config["pr_sh"]["ips"]
