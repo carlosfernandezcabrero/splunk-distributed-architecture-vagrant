@@ -154,7 +154,8 @@ def config_base_image(image):
     type=click.IntRange(min=2),
     help="Number of production instances to be scaled",
 )
-def config_instances(cluster_name, instances):
+def config_instances(cluster, instances):
+    cluster_name = cluster
     cluster_without_env = cluster_name.replace("pr_", "")
     config_to_add = {
         cluster_name: {
