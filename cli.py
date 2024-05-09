@@ -15,10 +15,18 @@ COMPONENTS_ABBR = {
     "lb": "Prod Search Heads Load Balancer",
     "manager": "Manager",
 }
+
+################################################################################
+# Paths
+
 SPLUNK_ENTERPRISE_DIR = "s14e"
 UNIVERSAL_FORWARDER_DIR = "u16f"
 LOAD_BALANCER_DIR = "l10r"
 DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
+
+# End Paths section
+################################################################################
+
 COMPONENTS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
