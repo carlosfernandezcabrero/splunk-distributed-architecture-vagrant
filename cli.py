@@ -6,14 +6,6 @@ import click
 from tabulate import tabulate
 
 ################################################################################
-# Constants
-
-BASE_IP = "192.168.56."
-
-# End Constants section
-################################################################################
-
-################################################################################
 # Paths
 
 SRC_DIR = "src"
@@ -27,10 +19,11 @@ USER_CONFIG_PATH = "user-config.json"
 ################################################################################
 
 ################################################################################
-# Server groups configurations
+# Constants
 
-PR_SERVER_GROUPS_IP_RANGE = {"idx": 2, "sh": 1}
-SERVER_GROUPS_ABBR = {
+BASE_IP = "192.168.56."
+PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1}
+INSTANCES_DESCRIPTIONS = {
     "idx": "Indexer",
     "sh": "Search Head",
     "fwd": "Universal Forwarder",
@@ -38,7 +31,7 @@ SERVER_GROUPS_ABBR = {
     "lb": "Prod Search Heads Load Balancer",
     "manager": "Manager",
 }
-SERVER_GROUPS_CONFIG = {
+CLUSTERS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
@@ -81,7 +74,7 @@ SERVER_GROUPS_CONFIG = {
     },
 }
 
-# End Server groups configurations section
+# End Constants section
 ################################################################################
 
 ################################################################################
@@ -146,10 +139,10 @@ def config_base_image(image):
     help="Configure number of production instances. Apply to production indexers and search heads and also to the forwarders."
 )
 @click.option(
-    "--server-group",
+    "--cluster",
     "-c",
     type=click.Choice(["pr_idx", "pr_sh", "fwd"], case_sensitive=False),
-    help="Name of the production server group to scale",
+    help="Name of the production cluster to scale",
 )
 @click.option(
     "--instances",
@@ -159,21 +152,21 @@ def config_base_image(image):
     type=click.IntRange(min=2),
     help="Number of production instances to be scaled",
 )
-def config_instances(server_group, instances):
-    server_group_without_prefix = server_group.replace("pr_", "")
+def config_instances(cluster_name, instances):
+    cluster_without_env = cluster_name.replace("pr_", "")
     config_to_add = {
-        server_group: {
+        cluster_name: {
             "ips": [
-                f"{BASE_IP}{PR_SERVER_GROUPS_IP_RANGE[server_group_without_prefix]}{n}"
+                f"{BASE_IP}{PR_INSTANCES_IP_RANGE[cluster_without_env]}{n}"
                 for n in range(1, instances + 1)
             ],
         }
     }
     prev_config = get_config()
-    prev_ips = prev_config.get(server_group, {}).get("ips", [])
-    new_ips = config_to_add[server_group]["ips"]
+    prev_ips = prev_config.get(cluster_name, {}).get("ips", [])
+    new_ips = config_to_add[cluster_name]["ips"]
     new_instances = [
-        ip for ip in config_to_add[server_group]["ips"] if ip not in prev_ips
+        ip for ip in config_to_add[cluster_name]["ips"] if ip not in prev_ips
     ]
 
     write_config(config_to_add)
@@ -185,7 +178,7 @@ def config_instances(server_group, instances):
                 [
                     [
                         ip,
-                        f"{server_group}{ip[-1]}",
+                        f"{cluster_name}{ip[-1]}",
                     ]
                     for ip in new_instances
                 ],
@@ -196,11 +189,11 @@ def config_instances(server_group, instances):
         click.echo()
     elif len(new_ips) < len(prev_ips):
         click.echo(
-            f"\nProduction {SERVER_GROUPS_ABBR[server_group_without_prefix]} instances scaled down\n"
+            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
         )
     else:
         click.echo(
-            f"\nProduction {SERVER_GROUPS_ABBR[server_group_without_prefix]} instances already configured.\n"
+            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances already configured.\n"
         )
 
 
@@ -220,26 +213,28 @@ def info(about):
         config = get_config()
 
         data_to_show = []
-        for server_group, data in config.items():
-            server_group_config = SERVER_GROUPS_CONFIG.get(server_group, {})
+        for cluster_name, data in config.items():
+            cluster_config = CLUSTERS_CONFIG.get(cluster_name, {})
 
             for ip in data.get("ips", []):
-                type = server_group.replace("pr_", "").replace("de_", "")
-                environment = server_group_config["env"]
+                cluster_name_without_env = cluster_name.replace("pr_", "").replace(
+                    "de_", ""
+                )
+                environment = cluster_config["env"]
 
                 vm_name = (
-                    f"{server_group}{ip[-1]}"
-                    if environment == "PR" or type == "fwd"
-                    else server_group
+                    f"{cluster_name}{ip[-1]}"
+                    if environment == "PR" or cluster_name_without_env == "fwd"
+                    else cluster_name
                 )
 
                 data_to_show.append(
                     [
                         ip,
                         vm_name,
-                        SERVER_GROUPS_ABBR[type],
+                        INSTANCES_DESCRIPTIONS[cluster_name_without_env],
                         environment,
-                        server_group_config["web"](ip),
+                        cluster_config["web"](ip),
                     ]
                 )
 
@@ -342,11 +337,11 @@ def manage_aux(action, server_groups):
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
-    server_group = re.sub(r"\d", "", vm)
-    server_group_config = SERVER_GROUPS_CONFIG[server_group]
-    server_group_dir = server_group_config["dir"]
+    cluster_name = re.sub(r"\d", "", vm)
+    cluster_config = CLUSTERS_CONFIG[cluster_name]
+    cluster_dir = cluster_config["dir"]
 
-    system(f"cd {server_group_dir} && vagrant ssh {vm} && cd -")
+    system(f"cd {cluster_dir} && vagrant ssh {vm} && cd -")
 
 
 if __name__ == "__main__":

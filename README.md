@@ -129,7 +129,7 @@ python connect --help
 
 #### config-instances
 
-Este comando sirve para configurar cuantas instancias queremos de los siguientes grupos de servidores:
+Este comando sirve para configurar cuantas instancias queremos de los siguientes clusters en producción:
 
 - Forwarders
 - Indexadores
