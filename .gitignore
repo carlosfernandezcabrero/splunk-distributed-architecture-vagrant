@@ -4,3 +4,4 @@ downloads/*
 *.log
 .DS_Store
 *.pem
+user-config.json
