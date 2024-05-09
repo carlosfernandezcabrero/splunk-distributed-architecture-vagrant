@@ -4,4 +4,3 @@ common/downloads/*
 *.log
 .DS_Store
 *.pem
-config.json
