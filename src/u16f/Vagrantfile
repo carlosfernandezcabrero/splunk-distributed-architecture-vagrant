@@ -61,7 +61,7 @@ Vagrant.configure("2") do |config|
 
             fwd.vm.provision "shell" do |s|
                 s.privileged = false
-                s.path = "../common/config/generate_forwarder_conf.sh"
+                s.path = "../common/scripts/generate_forwarder_conf.sh"
                 s.args = [servers_pr, servers_de, display_name, "splunkforwarder"]
             end
         end
