@@ -7,6 +7,8 @@
   - [Requisitos](#requisitos)
   - [🔑 Credenciales](#-credenciales)
   - [Primer uso](#primer-uso)
+  - [Personalizaciones](#personalizaciones)
+    - [Copiar archivos a las instancias cuando se crean](#copiar-archivos-a-las-instancias-cuando-se-crean)
   - [Uso](#uso)
     - [Tu primera vez levantando un grupo de servidores de la infraestructura 🚀](#tu-primera-vez-levantando-un-grupo-de-servidores-de-la-infraestructura-)
     - [Comandos](#comandos)
@@ -55,6 +57,18 @@ Las credenciales del usuario de instalación de Splunk son las siguientes:
   - Para el Splunk Enterprise el TGZ se debe llamar `splunk-enterprise.tgz`.
 
   En la carpeta `downloads` podemos guardar TGZ de otras versiones de los productos de Splunk pero solo serán los que se llamen `universalforwarder.tgz` y `splunk-enterprise.tgz`los que el Vagrantfile utilizara para levantar la arquitectura.
+
+## Personalizaciones
+
+### Copiar archivos a las instancias cuando se crean
+
+Para copiar archivos a las instancias cuando se crean debemos poner los archivos en las carpetas dentro de `files_to_copy`. Cada carpeta dentro de `files_to_copy` se asocia con un solo cluster donde se van a copiar los ficheros. A continuación se especifica el cluster con que se asocia cada carpeta:
+
+- idx_de: Indexador de desarrollo
+- idx_pr: Indexadores de producción
+- sh_de: Search head de desarrollo
+- sh_pr: Search heads de producción
+- manager: Manager
 
 ## Uso
 
