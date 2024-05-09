@@ -1,6 +1,6 @@
 .vagrant/
-common/downloads/*
-!common/downloads/.gitkeep
+downloads/*
+!downloads/.gitkeep
 *.log
 .DS_Store
 *.pem
