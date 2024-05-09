@@ -18,6 +18,7 @@ COMPONENTS_ABBR = {
 SPLUNK_ENTERPRISE_DIR = "s14e"
 UNIVERSAL_FORWARDER_DIR = "u16f"
 LOAD_BALANCER_DIR = "l10r"
+DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
 COMPONENTS_CONFIG = {
     "pr_idx": {
         "web": lambda ip: f"http://{ip}:8000",
@@ -68,7 +69,7 @@ COMPONENTS_CONFIG = {
 
 def read_default_config():
     try:
-        with open("config.json") as f:
+        with open(DEFAULT_CONFIG_PATH) as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
