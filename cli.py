@@ -19,9 +19,10 @@ COMPONENTS_ABBR = {
 ################################################################################
 # Paths
 
-SPLUNK_ENTERPRISE_DIR = "s14e"
-UNIVERSAL_FORWARDER_DIR = "u16f"
-LOAD_BALANCER_DIR = "l10r"
+SRC_DIR = "src"
+SPLUNK_ENTERPRISE_DIR = path.join(SRC_DIR, "s14e")
+UNIVERSAL_FORWARDER_DIR = path.join(SRC_DIR, "u16f")
+LOAD_BALANCER_DIR = path.join(SRC_DIR, "l10r")
 DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
 USER_CONFIG_PATH = "user-config.json"
 
@@ -149,7 +150,6 @@ def config_base_image(image):
 )
 def config_instances(component, instances):
     component_without_prefix = component.replace("pr_", "")
-
     config_to_add = {
         component: {
             "ips": [
