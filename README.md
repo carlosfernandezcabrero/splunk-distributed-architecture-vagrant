@@ -162,3 +162,4 @@ python config-instances --help
 ### Archivos de configuración
 
 - `src/config.json`: Archivo que contiene toda la parametrización de la arquitectura por defecto.
+- `user-config.json`: Archivo que contiene toda la parametrización personalizada del usuario de la arquitectura. Este archivo se puede manipular por nosotros mismos y no se subirá al repositorio.
