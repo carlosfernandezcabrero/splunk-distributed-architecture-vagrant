@@ -135,8 +135,13 @@ Vagrant.configure("2") do |config|
             echo "serverName = de_sh" >> /usr/local/splunk/etc/system/local/server.conf
             echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
+            echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "master_uri = https://#{data_hash['manager']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "mode = searchhead" >> /usr/local/splunk/etc/system/local/server.conf
+
             echo "[distributedSearch]" > /usr/local/splunk/etc/system/local/distsearch.conf
-            echo "servers = https://#{data_hash['de_idx']['ips'][0]}:8089,https://#{data_hash['pr_idx']['ips'].join(':8089,https://')}:8089" >> /usr/local/splunk/etc/system/local/distsearch.conf
+            echo "servers = https://#{data_hash['de_idx']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/distsearch.conf
 
             /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
             sudo mkdir -p /vagrant/config/pem
@@ -163,10 +168,6 @@ Vagrant.configure("2") do |config|
             pr_idx.vm.provision  "file",
                 source: "./config/idx/server.conf", 
                 destination: "/usr/local/splunk/etc/system/local/server.conf"
-
-            pr_idx.vm.provision "file",
-                source: "./config/pem",
-                destination: "/usr/local/splunk/etc/auth/distServerKeys/de_sh"
 
             pr_idx.vm.provision "file",
                 source: "../../custom/idx_pr",
