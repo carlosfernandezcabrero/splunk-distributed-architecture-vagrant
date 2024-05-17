@@ -319,7 +319,7 @@ def manage_aux(action, server_groups):
         cd_command = f"cd {dir[server_group]}"
         vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
 
-        if server_group == "core_pr":
+        if server_group in ["core_pr", "core_de"]:
             vagrant_command_aux = vagrant_command
             vagrant_command = f"vagrant {vagrant_action} manager"
 
