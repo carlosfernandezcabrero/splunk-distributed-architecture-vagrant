@@ -10,7 +10,7 @@ CALL_INTERVAL = 2
 
 cwd = path.dirname(path.abspath(__file__))
 f = open(f"{cwd}/../config.json")
-master_node_ip = json.load(f)["manager"]["ips"][0]
+master_node_ip = json.load(f)["manager"]["nodes"][0]
 f.close()
 
 

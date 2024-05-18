@@ -159,22 +159,22 @@ def config_instances(cluster, instances):
     cluster_without_env = cluster_name.replace("pr_", "")
     config_to_add = {
         cluster_name: {
-            "ips": [
+            "nodes": [
                 f"{BASE_IP}{PR_INSTANCES_IP_RANGE[cluster_without_env]}{n}"
                 for n in range(1, instances + 1)
             ],
         }
     }
     prev_config = get_config()
-    prev_ips = prev_config.get(cluster_name, {}).get("ips", [])
-    new_ips = config_to_add[cluster_name]["ips"]
+    prev_nodes = prev_config.get(cluster_name, {}).get("nodes", [])
+    new_nodes = config_to_add[cluster_name]["nodes"]
     new_instances = [
-        ip for ip in config_to_add[cluster_name]["ips"] if ip not in prev_ips
+        ip for ip in config_to_add[cluster_name]["nodes"] if ip not in prev_nodes
     ]
 
     write_config(config_to_add)
 
-    if len(new_ips) > len(prev_ips):
+    if len(new_nodes) > len(prev_nodes):
         click.echo("\nNew instances added to configuration:\n")
         click.echo(
             tabulate(
@@ -190,7 +190,7 @@ def config_instances(cluster, instances):
             )
         )
         click.echo()
-    elif len(new_ips) < len(prev_ips):
+    elif len(new_nodes) < len(prev_nodes):
         click.echo(
             f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
         )
@@ -219,7 +219,7 @@ def info(about):
         for cluster_name, data in config.items():
             cluster_config = CLUSTERS_CONFIG.get(cluster_name, {})
 
-            for ip in data.get("ips", []):
+            for ip in data.get("nodes", []):
                 cluster_name_without_env = cluster_name.replace("pr_", "").replace(
                     "de_", ""
                 )
@@ -284,17 +284,17 @@ def manage(action, server_groups):
 def manage_aux(action, server_groups):
     config = get_config()
 
-    pr_idx_ips = config["pr_idx"]["ips"]
-    pr_sh_ips = config["pr_sh"]["ips"]
-    fwd_ips = config["fwd"]["ips"]
+    pr_idx_nodes = config["pr_idx"]["nodes"]
+    pr_sh_nodes = config["pr_sh"]["nodes"]
+    fwd_nodes = config["fwd"]["nodes"]
 
     servers = {
         "core_pr": [
-            *[f"pr_idx{ip[-1]}" for ip in pr_idx_ips],
-            *[f"pr_sh{ip[-1]}" for ip in pr_sh_ips],
+            *[f"pr_idx{ip[-1]}" for ip in pr_idx_nodes],
+            *[f"pr_sh{ip[-1]}" for ip in pr_sh_nodes],
         ],
         "core_de": ["de_sh", "de_idx"],
-        "fwd": [f"fwd{ip[-1]}" for ip in fwd_ips],
+        "fwd": [f"fwd{ip[-1]}" for ip in fwd_nodes],
         "hf": ["hf"],
         "lb": ["lb"],
     }
