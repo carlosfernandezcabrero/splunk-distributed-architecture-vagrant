@@ -220,10 +220,11 @@ def info(about):
         config = get_config()
 
         data_to_show = []
-        for cluster_name, data in config.items():
+        for cluster_name, cluster_config in CLUSTERS_CONFIG.items():
             cluster_config = CLUSTERS_CONFIG[cluster_name]
+            ips = config[cluster_name]["nodes"]["ips"]
 
-            for ip in data["nodes"]["ips"]:
+            for ip in ips:
                 cluster_name_without_env = cluster_name.replace("pr_", "").replace(
                     "de_", ""
                 )
