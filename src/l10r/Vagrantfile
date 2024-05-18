@@ -20,14 +20,14 @@ Vagrant.configure("2") do |config|
     config.vm.define "lb" do |lb|
         lb.vm.box = "ubuntu/bionic64"
         lb.vm.hostname = "lb"
-        lb.vm.network :private_network, ip: data_hash['lb']['nodes'][0]
+        lb.vm.network :private_network, ip: data_hash['lb']['nodes']['ips'][0]
         lb.vm.provider :virtualbox do |vb|
             vb.name = "lb"
             vb.memory = 512
             vb.cpus = 1
         end
 
-        servers = data_hash['pr_sh']['nodes'].map { |ip| "server #{ip}:8000;" }.join(" ")
+        servers = data_hash['pr_sh']['nodes']['ips'].map { |ip| "server #{ip}:8000;" }.join(" ")
 
         lb.vm.provision "shell" do |s|
             s.path = "config_nginx.sh"

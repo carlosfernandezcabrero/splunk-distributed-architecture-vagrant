@@ -55,7 +55,7 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "manager" do |manager|
         manager.vm.hostname = "manager"
-        manager.vm.network :private_network, ip: data_hash['manager']['nodes'][0]
+        manager.vm.network :private_network, ip: data_hash['manager']['nodes']['ips'][0]
         manager.vm.provider :virtualbox do |vb|
             vb.name = "manager"
         end
@@ -76,7 +76,7 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "de_idx" do |de_idx|
         de_idx.vm.hostname = "deidx"
-        de_idx.vm.network :private_network, ip: data_hash['de_idx']['nodes'][0]
+        de_idx.vm.network :private_network, ip: data_hash['de_idx']['nodes']['ips'][0]
         de_idx.vm.provider :virtualbox do |vb|
             vb.name = "de_idx"
         end
@@ -109,7 +109,7 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "de_sh" do |de_sh|
         de_sh.vm.hostname = "desh"
-        de_sh.vm.network :private_network, ip: data_hash['de_sh']['nodes'][0]
+        de_sh.vm.network :private_network, ip: data_hash['de_sh']['nodes']['ips'][0]
         de_sh.vm.provider :virtualbox do |vb|
             vb.name = "de_sh"
         end
@@ -130,13 +130,13 @@ Vagrant.configure("2") do |config|
             echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
             echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
-            echo "master_uri = https://#{data_hash['manager']['nodes'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "master_uri = https://#{data_hash['manager']['nodes']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
             echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
             echo "mode = searchhead" >> /usr/local/splunk/etc/system/local/server.conf
             echo "multisite = true" >> /usr/local/splunk/etc/system/local/server.conf
 
             echo "[distributedSearch]" > /usr/local/splunk/etc/system/local/distsearch.conf
-            echo "servers = https://#{data_hash['de_idx']['nodes'][0]}:8089" >> /usr/local/splunk/etc/system/local/distsearch.conf
+            echo "servers = https://#{data_hash['de_idx']['nodes']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/distsearch.conf
 
             /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
             sudo mkdir -p /vagrant/config/pem
@@ -145,7 +145,7 @@ Vagrant.configure("2") do |config|
     end
 
     site = "site1"
-    (data_hash['pr_idx']['nodes']).each do |ip|
+    (data_hash['pr_idx']['nodes']['ips']).each do |ip|
         last_char = ip[-1, 1]
         display_name = "pr_idx#{last_char}"
         internal_name = "pridx#{last_char}"
@@ -192,13 +192,13 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "hf" do |hf|
         hf.vm.hostname = "hf"
-        hf.vm.network :private_network, ip: data_hash['hf']['nodes'][0]
+        hf.vm.network :private_network, ip: data_hash['hf']['nodes']['ips'][0]
         hf.vm.provider :virtualbox do |vb|
             vb.name = "hf"
         end
 
-        servers_pr ="#{data_hash['pr_idx']['nodes'].join(':9997,')}:9997"
-        servers_de = "#{data_hash['de_idx']['nodes'][0]}:9997"
+        servers_pr ="#{data_hash['pr_idx']['nodes']['ips'].join(':9997,')}:9997"
+        servers_de = "#{data_hash['de_idx']['nodes']['ips'][0]}:9997"
         server_name = "hf"
 
         hf.vm.provision "file",
@@ -217,11 +217,11 @@ Vagrant.configure("2") do |config|
         end
     end
 
-    (data_hash['pr_sh']['nodes']).each do |ip, index|
+    (data_hash['pr_sh']['nodes']['ips']).each do |ip, index|
         last_char = ip[-1, 1]
         display_name = "pr_sh#{last_char}"
         internal_name = "prsh#{last_char}"
-        last_ip = data_hash['pr_sh']['nodes'].last
+        last_ip = data_hash['pr_sh']['nodes']['ips'].last
 
         config.vm.define display_name do |pr_sh|
             pr_sh.vm.hostname = internal_name
@@ -246,7 +246,7 @@ Vagrant.configure("2") do |config|
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
                 echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
-                echo "master_uri = https://#{data_hash['manager']['nodes'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "master_uri = https://#{data_hash['manager']['nodes']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "mode = searchhead" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "multisite = true" >> /usr/local/splunk/etc/system/local/server.conf
@@ -256,7 +256,7 @@ Vagrant.configure("2") do |config|
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
                 echo "[shclustering]" >> /usr/local/splunk/etc/system/local/server.conf
-                echo "conf_deploy_fetch_url = https://#{data_hash['manager']['nodes'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "conf_deploy_fetch_url = https://#{data_hash['manager']['nodes']['ips'][0]}:8089" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "disabled = 0" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "pass4SymmKey = yoursecretkey" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "shcluster_label = cluster_1" >> /usr/local/splunk/etc/system/local/server.conf
@@ -267,7 +267,7 @@ Vagrant.configure("2") do |config|
                 if [ "#{ip}" == "#{last_ip}" ]
                 then
                     /usr/local/splunk/bin/splunk start --accept-license --answer-yes --no-prompt --seed-passwd admin1234
-                    /usr/local/splunk/bin/splunk bootstrap shcluster-captain -servers_list "https://#{data_hash['pr_sh']['nodes'].join(':8089,https://')}:8089" -auth admin:admin1234
+                    /usr/local/splunk/bin/splunk bootstrap shcluster-captain -servers_list "https://#{data_hash['pr_sh']['nodes']['ips'].join(':8089,https://')}:8089" -auth admin:admin1234
                 fi
             SHELL
         end

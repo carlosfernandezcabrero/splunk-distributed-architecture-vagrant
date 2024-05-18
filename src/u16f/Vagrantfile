@@ -44,7 +44,7 @@ Vagrant.configure("2") do |config|
         source: "./config/deploymentclient.conf",
         destination: "/usr/local/splunkforwarder/etc/apps/conf_deployment/default/deploymentclient.conf"
 
-    (data_hash['fwd']['nodes']).each do |ip|
+    (data_hash['fwd']['nodes']['ips']).each do |ip|
         last_char = ip[-1, 1]
         display_name = "fwd#{last_char}"
         internal_name = "fwd#{last_char}"
@@ -56,8 +56,8 @@ Vagrant.configure("2") do |config|
                 vb.name = display_name
             end
 
-            servers_pr ="#{data_hash['pr_idx']['nodes'].join(':9997,')}:9997"
-            servers_de = "#{data_hash['de_idx']['nodes'][0]}:9997"
+            servers_pr ="#{data_hash['pr_idx']['nodes']['ips'].join(':9997,')}:9997"
+            servers_de = "#{data_hash['de_idx']['nodes']['ips'][0]}:9997"
 
             fwd.vm.provision "shell" do |s|
                 s.privileged = false
