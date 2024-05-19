@@ -24,7 +24,7 @@ USER_CONFIG_PATH = "user-config.json"
 # Constants
 
 BASE_IP = "192.168.56."
-PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1}
+PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1, "fwd": 3}
 INSTANCES_DESCRIPTIONS = {
     "idx": "Indexer",
     "sh": "Search Head",
@@ -135,23 +135,24 @@ def config_base_image(image):
     click.echo(f"\nBase image configured to {image}\n")
 
 
-@cli.command(
-    help="Configure number of production instances. Apply to production indexers and search heads and also to the forwarders."
-)
-@click.option(
-    "--cluster",
-    "-c",
-    type=click.Choice(["pr_idx", "pr_sh", "fwd"], case_sensitive=False),
-    help="Name of the production cluster to scale",
-)
-@click.option(
-    "--instances",
-    "-i",
-    default=2,
-    show_default=True,
-    type=click.IntRange(min=2),
-    help="Number of production instances to be scaled",
-)
+@cli.command(help="Configure instances of production indexers")
+@click.argument("instances", type=click.IntRange(min=4), nargs=1, required=True)
+def config_pr_idx_instances(instances):
+    config_instances("pr_idx", instances)
+
+
+@cli.command(help="Configure instances of production search heads")
+@click.argument("instances", type=click.IntRange(min=2), nargs=1, required=True)
+def config_pr_sh_instances(instances):
+    config_instances("pr_sh", instances)
+
+
+@cli.command(help="Configure instances of forwarders")
+@click.argument("instances", type=click.IntRange(min=1), nargs=1, required=True)
+def config_fwd_instances(instances):
+    config_instances("fwd", instances)
+
+
 def config_instances(cluster, instances):
     cluster_name = cluster
     cluster_without_env = cluster_name.replace("pr_", "")
@@ -215,10 +216,7 @@ def config_instances(cluster, instances):
     - vms: Show information about the virtual machines (IP, virtual machine name, type, environment and web interface)"""
 )
 @click.argument(
-    "about",
-    type=click.Choice(["vms"], case_sensitive=False),
-    nargs=1,
-    required=True,
+    "about", type=click.Choice(["vms"], case_sensitive=False), nargs=1, required=True
 )
 def info(about):
     def vms():
