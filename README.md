@@ -158,7 +158,12 @@ python config-instances --help
 
 ## Especificaciones técnicas por defecto de la infraestructura
 
-![Architecture diagram](readme/images/general-archiecture.png)
+### Numero de instancias
+
+De todos las piezas que pueden componer una arquitectura de Splunk solo hay una instancia salvo para las siguientes piezas:
+
+- Indexadores de producción: 4
+- Search heads de producción: 2
 
 ### Grupos de servidores
 
