@@ -72,6 +72,14 @@ Vagrant.configure("2") do |config|
             type: "shell",
             privileged: false,
             path: "../common/scripts/execute_user_scripts.sh"
+
+        manager.vm.provision "shell", privileged: false, inline: <<-SHELL
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "serverName = manager" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "site = #{data_hash['manager']['nodes']['sites'][0]}" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "" >> /usr/local/splunk/etc/system/local/server.conf
+        SHELL
     end
 
     config.vm.define "de_idx" do |de_idx|
@@ -126,7 +134,7 @@ Vagrant.configure("2") do |config|
         de_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
             echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
             echo "serverName = de_sh" >> /usr/local/splunk/etc/system/local/server.conf
-            echo "site = site0" >> /usr/local/splunk/etc/system/local/server.conf
+            echo "site = #{data_hash['de_sh']['nodes']['sites'][0]}" >> /usr/local/splunk/etc/system/local/server.conf
             echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
             echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
@@ -144,17 +152,10 @@ Vagrant.configure("2") do |config|
         SHELL
     end
 
-    site = "site1"
-    (data_hash['pr_idx']['nodes']['ips']).each do |ip|
+    (data_hash['pr_idx']['nodes']['ips']).each_with_index do |ip, index|
         last_char = ip[-1, 1]
         display_name = "pr_idx#{last_char}"
         internal_name = "pridx#{last_char}"
-
-        if site == "site1"
-            site = "site2"
-        else
-            site = "site1"
-        end
 
         config.vm.define display_name do |pr_idx|
             pr_idx.vm.hostname = internal_name
@@ -184,7 +185,7 @@ Vagrant.configure("2") do |config|
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "[general]" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "serverName = #{display_name}" >> /usr/local/splunk/etc/system/local/server.conf
-                echo "site = #{site}" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "site = #{data_hash['pr_idx']['nodes']['sites'][index]}" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
             SHELL
         end
@@ -217,7 +218,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
-    (data_hash['pr_sh']['nodes']['ips']).each do |ip, index|
+    (data_hash['pr_sh']['nodes']['ips']).each_with_index do |ip, index|
         last_char = ip[-1, 1]
         display_name = "pr_sh#{last_char}"
         internal_name = "prsh#{last_char}"
@@ -242,7 +243,7 @@ Vagrant.configure("2") do |config|
             pr_sh.vm.provision "shell", privileged: false, inline: <<-SHELL
                 echo "[general]" > /usr/local/splunk/etc/system/local/server.conf
                 echo "serverName = #{display_name}" >> /usr/local/splunk/etc/system/local/server.conf
-                echo "site = site0" >> /usr/local/splunk/etc/system/local/server.conf
+                echo "site = #{data_hash['pr_sh']['nodes']['sites'][index]}" >> /usr/local/splunk/etc/system/local/server.conf
                 echo "" >> /usr/local/splunk/etc/system/local/server.conf
 
                 echo "[clustering]" >> /usr/local/splunk/etc/system/local/server.conf
