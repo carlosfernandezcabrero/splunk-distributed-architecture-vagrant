@@ -125,12 +125,10 @@ def cli():
     pass
 
 
-@cli.command(help="Configure base image to create virtual machines")
-@click.option(
-    "--image",
-    "-i",
-    help="Base image to be used for virtual machines",
+@cli.command(
+    help="Configure base image to create virtual machines. Vagrant hub url: https://app.vagrantup.com/boxes/search"
 )
+@click.argument("image", type=click.STRING, nargs=1, required=True)
 def config_base_image(image):
     write_config({"base_config": {"box": image}})
 
