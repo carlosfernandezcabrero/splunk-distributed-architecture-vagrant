@@ -167,6 +167,13 @@ def config_instances(cluster, instances):
             },
         }
     }
+
+    if cluster_name == "pr_idx":
+        middle = instances // 2
+        config_to_add[cluster_name]["nodes"]["sites"] = [
+            "site1" if i <= middle else "site2" for i in range(1, instances + 1)
+        ]
+
     prev_config = get_config()
     prev_nodes_ips = prev_config[cluster_name]["nodes"]["ips"]
     new_nodes_ips = config_to_add[cluster_name]["nodes"]["ips"]
