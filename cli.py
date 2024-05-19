@@ -300,7 +300,7 @@ def manage_aux(action, server_groups):
     pr_sh_nodes_ips = config["pr_sh"]["nodes"]["ips"]
     fwd_nodes_ips = config["fwd"]["nodes"]["ips"]
 
-    servers = {
+    servers_groups = {
         "core_pr": [
             *[f"pr_idx{ip[-1]}" for ip in pr_idx_nodes_ips],
             *[f"pr_sh{ip[-1]}" for ip in pr_sh_nodes_ips],
@@ -311,7 +311,7 @@ def manage_aux(action, server_groups):
         "lb": ["lb"],
     }
 
-    dir = {
+    dirs = {
         "core_pr": SPLUNK_ENTERPRISE_DIR,
         "core_de": SPLUNK_ENTERPRISE_DIR,
         "hf": SPLUNK_ENTERPRISE_DIR,
@@ -326,23 +326,21 @@ def manage_aux(action, server_groups):
             manage_aux(action, ["core_de", "core_pr", "lb", "hf", "fwd"])
             break
 
-        v_servers_names = " ".join(servers[server_group])
         vagrant_action = vagrant_actions[action]
-        cd_command = f"cd {dir[server_group]}"
-        vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
+        dir = dirs[server_group]
+        servers = servers_groups[server_group]
 
         if server_group in ["core_pr", "core_de"]:
-            vagrant_command_aux = vagrant_command
-            vagrant_command = f"vagrant {vagrant_action} manager"
+            command = f"cd {dir} && vagrant {vagrant_action} manager"
 
             if action == "start":
-                vagrant_command += " && python check_master_status.py"
+                command += " && python check_master_status.py"
 
-            vagrant_command += f" && {vagrant_command_aux}"
+            system(command)
 
-        command = f"{cd_command} && {vagrant_command} && cd -"
-
-        system(command)
+        for server in servers:
+            command = f"cd {dir} && vagrant {vagrant_action} {server}"
+            system(command)
 
 
 @cli.command(
