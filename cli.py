@@ -159,22 +159,33 @@ def config_instances(cluster, instances):
     cluster_without_env = cluster_name.replace("pr_", "")
     config_to_add = {
         cluster_name: {
-            "ips": [
-                f"{BASE_IP}{PR_INSTANCES_IP_RANGE[cluster_without_env]}{n}"
-                for n in range(1, instances + 1)
-            ],
+            "nodes": {
+                "ips": [
+                    f"{BASE_IP}{PR_INSTANCES_IP_RANGE[cluster_without_env]}{n}"
+                    for n in range(1, instances + 1)
+                ]
+            },
         }
     }
+
+    if cluster_name == "pr_idx":
+        middle = instances // 2
+        config_to_add[cluster_name]["nodes"]["sites"] = [
+            "site1" if i <= middle else "site2" for i in range(1, instances + 1)
+        ]
+
     prev_config = get_config()
-    prev_ips = prev_config.get(cluster_name, {}).get("ips", [])
-    new_ips = config_to_add[cluster_name]["ips"]
-    new_instances = [
-        ip for ip in config_to_add[cluster_name]["ips"] if ip not in prev_ips
+    prev_nodes_ips = prev_config[cluster_name]["nodes"]["ips"]
+    new_nodes_ips = config_to_add[cluster_name]["nodes"]["ips"]
+    new_instances_ips = [
+        ip
+        for ip in config_to_add[cluster_name]["nodes"]["ips"]
+        if ip not in prev_nodes_ips
     ]
 
     write_config(config_to_add)
 
-    if len(new_ips) > len(prev_ips):
+    if len(new_nodes_ips) > len(prev_nodes_ips):
         click.echo("\nNew instances added to configuration:\n")
         click.echo(
             tabulate(
@@ -183,14 +194,14 @@ def config_instances(cluster, instances):
                         ip,
                         f"{cluster_name}{ip[-1]}",
                     ]
-                    for ip in new_instances
+                    for ip in new_instances_ips
                 ],
                 headers=["IP", "VM Name"],
                 tablefmt="grid",
             )
         )
         click.echo()
-    elif len(new_ips) < len(prev_ips):
+    elif len(new_nodes_ips) < len(prev_nodes_ips):
         click.echo(
             f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
         )
@@ -216,10 +227,11 @@ def info(about):
         config = get_config()
 
         data_to_show = []
-        for cluster_name, data in config.items():
-            cluster_config = CLUSTERS_CONFIG.get(cluster_name, {})
+        for cluster_name, cluster_config in CLUSTERS_CONFIG.items():
+            cluster_config = CLUSTERS_CONFIG[cluster_name]
+            ips = config[cluster_name]["nodes"]["ips"]
 
-            for ip in data.get("ips", []):
+            for ip in ips:
                 cluster_name_without_env = cluster_name.replace("pr_", "").replace(
                     "de_", ""
                 )
@@ -284,22 +296,22 @@ def manage(action, server_groups):
 def manage_aux(action, server_groups):
     config = get_config()
 
-    pr_idx_ips = config["pr_idx"]["ips"]
-    pr_sh_ips = config["pr_sh"]["ips"]
-    fwd_ips = config["fwd"]["ips"]
+    pr_idx_nodes_ips = config["pr_idx"]["nodes"]["ips"]
+    pr_sh_nodes_ips = config["pr_sh"]["nodes"]["ips"]
+    fwd_nodes_ips = config["fwd"]["nodes"]["ips"]
 
-    servers = {
+    servers_groups = {
         "core_pr": [
-            *[f"pr_idx{ip[-1]}" for ip in pr_idx_ips],
-            *[f"pr_sh{ip[-1]}" for ip in pr_sh_ips],
+            *[f"pr_idx{ip[-1]}" for ip in pr_idx_nodes_ips],
+            *[f"pr_sh{ip[-1]}" for ip in pr_sh_nodes_ips],
         ],
         "core_de": ["de_sh", "de_idx"],
-        "fwd": [f"fwd{ip[-1]}" for ip in fwd_ips],
+        "fwd": [f"fwd{ip[-1]}" for ip in fwd_nodes_ips],
         "hf": ["hf"],
         "lb": ["lb"],
     }
 
-    dir = {
+    dirs = {
         "core_pr": SPLUNK_ENTERPRISE_DIR,
         "core_de": SPLUNK_ENTERPRISE_DIR,
         "hf": SPLUNK_ENTERPRISE_DIR,
@@ -314,23 +326,21 @@ def manage_aux(action, server_groups):
             manage_aux(action, ["core_de", "core_pr", "lb", "hf", "fwd"])
             break
 
-        v_servers_names = " ".join(servers[server_group])
         vagrant_action = vagrant_actions[action]
-        cd_command = f"cd {dir[server_group]}"
-        vagrant_command = f"vagrant {vagrant_action} {v_servers_names}"
+        dir = dirs[server_group]
+        servers = servers_groups[server_group]
 
         if server_group in ["core_pr", "core_de"]:
-            vagrant_command_aux = vagrant_command
-            vagrant_command = f"vagrant {vagrant_action} manager"
+            command = f"cd {dir} && vagrant {vagrant_action} manager"
 
             if action == "start":
-                vagrant_command += " && python check_master_status.py"
+                command += " && python check_master_status.py"
 
-            vagrant_command += f" && {vagrant_command_aux}"
+            system(command)
 
-        command = f"{cd_command} && {vagrant_command} && cd -"
-
-        system(command)
+        for server in servers:
+            command = f"cd {dir} && vagrant {vagrant_action} {server}"
+            system(command)
 
 
 @cli.command(
