@@ -2,7 +2,7 @@
 
 import json
 import re
-from os import path, system
+from os import getenv, path, system
 
 import click
 from tabulate import tabulate
@@ -23,6 +23,7 @@ USER_CONFIG_PATH = "user-config.json"
 ################################################################################
 # Constants
 
+VAGRANT_PROVIDER = getenv("VAGRANT_DEFAULT_PROVIDER", "virtualbox")
 BASE_IP = "192.168.56."
 PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1, "fwd": 3}
 INSTANCES_DESCRIPTIONS = {
@@ -327,7 +328,7 @@ def manage_aux(action, server_groups):
         servers = servers_groups[server_group]
 
         if server_group in ["core_pr", "core_de"]:
-            command = f"cd {dir} && vagrant {vagrant_action} manager"
+            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
 
             if action == "start":
                 command += " && python check_master_status.py"
@@ -335,7 +336,7 @@ def manage_aux(action, server_groups):
             system(command)
 
         for server in servers:
-            command = f"cd {dir} && vagrant {vagrant_action} {server}"
+            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
             system(command)
 
 
