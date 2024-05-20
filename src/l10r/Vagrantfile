@@ -25,6 +25,7 @@ Vagrant.configure("2") do |config|
             vb.name = "lb"
             vb.memory = 512
             vb.cpus = 1
+            vb.check_guest_additions = false
         end
 
         servers = data_hash['pr_sh']['nodes']['ips'].map { |ip| "server #{ip}:8000;" }.join(" ")
