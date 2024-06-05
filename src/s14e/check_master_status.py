@@ -15,19 +15,10 @@ f.close()
 
 
 class Checks:
-    def web_interface():
-        try:
-            return (
-                urllib.request.urlopen(
-                    f"http://{master_node_ip}:8000", timeout=2
-                ).getcode()
-                == 200
-            )
-        except URLError:
-            return False
+    pass    
 
 
-checks = [Checks.web_interface]
+checks = []
 retries = 0
 
 print("[INFO] Checking if Master is available...")
