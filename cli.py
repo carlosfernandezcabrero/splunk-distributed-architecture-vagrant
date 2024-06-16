@@ -27,11 +27,11 @@ VAGRANT_PROVIDER = getenv("VAGRANT_DEFAULT_PROVIDER", "virtualbox")
 BASE_IP = "192.168.56."
 PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1, "fwd": 3}
 INSTANCES_DESCRIPTIONS = {
-    "idx": "Indexer",
-    "sh": "Search Head",
-    "fwd": "Universal Forwarder",
-    "hf": "Heavy Forwarder",
-    "lb": "Prod Search Heads Load Balancer",
+    "idx": "IDX",
+    "sh": "SH",
+    "fwd": "UF",
+    "hf": "HF",
+    "lb": "PR SH LB",
     "manager": "Manager",
 }
 CLUSTERS_CONFIG = {
