@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+import asyncio
 import json
 import re
+import xml.etree.ElementTree as ET
 from os import getenv, path, system
 
 import click
+import httpx
 from tabulate import tabulate
 
 ################################################################################
@@ -117,6 +120,28 @@ def write_config(config):
         json.dump(config, f, indent=4)
 
 
+async def get_splunk_version(ip):
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            r = await client.get(
+                f"https://{ip}:8089/services/server/info",
+                headers={"Authorization": "Basic YWRtaW46YWRtaW4xMjM0"},
+            )
+
+        root = ET.fromstring(r.text)
+
+        namespaces = {
+            "s": "http://dev.splunk.com/ns/rest",
+            "atom": "http://www.w3.org/2005/Atom",
+        }
+
+        return root.findall(".//s:key[@name='version']", namespaces)[0].text
+    except httpx.ConnectTimeout:
+        return "The server is down"
+    except httpx.ConnectError:
+        return "Can't connect to the server"
+
+
 # End Helper Functions section
 ################################################################################
 
@@ -222,47 +247,64 @@ def config_instances(cluster, instances):
 def info(about):
     def vms():
         config = get_config()
+        data = []
 
-        data_to_show = []
-        for cluster_name, cluster_config in CLUSTERS_CONFIG.items():
-            cluster_config = CLUSTERS_CONFIG[cluster_name]
-            ips = config[cluster_name]["nodes"]["ips"]
-
-            for ip in ips:
-                cluster_name_without_env = cluster_name.replace("pr_", "").replace(
-                    "de_", ""
-                )
-                environment = cluster_config["env"]
-
-                vm_name = (
-                    f"{cluster_name}{ip[-1]}"
-                    if environment == "PR" or cluster_name_without_env == "fwd"
-                    else cluster_name
-                )
-
-                data_to_show.append(
-                    [
-                        ip,
-                        vm_name,
-                        INSTANCES_DESCRIPTIONS[cluster_name_without_env],
-                        environment,
-                        cluster_config["web"](ip),
-                    ]
-                )
-
-        click.echo(
-            tabulate(
-                data_to_show,
-                headers=[
-                    "IP",
-                    "VM Name",
-                    "Type",
-                    "Env",
-                    "Web",
-                ],
-                tablefmt="grid",
+        async def get_data_instance(
+            cluster_config_key,
+            cluster_config_value,
+            cluster_key_without_env,
+            cluster_edition,
+            cluster_env,
+            ip,
+        ):
+            vm_name = (
+                f"{cluster_config_key}{ip[-1]}"
+                if cluster_env == "PR" or cluster_edition == "uf"
+                else cluster_config_key
             )
-        )
+            version = await get_splunk_version(ip)
+
+            data.append(
+                [
+                    ip,
+                    vm_name,
+                    INSTANCES_DESCRIPTIONS[cluster_key_without_env],
+                    cluster_env,
+                    cluster_config_value["web"](ip),
+                    version,
+                ]
+            )
+
+        async def main():
+            async with asyncio.TaskGroup() as tg:
+                for cluster_config_key, cluster_config_value in CLUSTERS_CONFIG.items():
+                    ips = config[cluster_config_key]["nodes"]["ips"]
+
+                    cluster_key_without_env = cluster_config_key.replace(
+                        "pr_", ""
+                    ).replace("de_", "")
+
+                    for ip in ips:
+                        tg.create_task(
+                            get_data_instance(
+                                cluster_config_key,
+                                cluster_config_value,
+                                cluster_key_without_env,
+                                cluster_config_value["edition"],
+                                cluster_config_value["env"],
+                                ip,
+                            )
+                        )
+
+            click.echo(
+                tabulate(
+                    data,
+                    headers=["IP", "VM Name", "Type", "Env", "Web", "SPL Version"],
+                    tablefmt="grid",
+                )
+            )
+
+        asyncio.run(main())
 
     switch = {"vms": vms}
 
