@@ -25,7 +25,7 @@
 ## Requisitos
 
 - Tener instalado VirtualBox con una versión igual o superior a la 7.
-- Tener instalado Python 3.
+- Tener instalado Python. Version minima requerida 3.11.
 - Tener instalado Vagrant con una versión igual o superior a la 2.4.1.
 
 ## 🔑 Credenciales

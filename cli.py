@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 
+import asyncio
 import json
 import re
+import xml.etree.ElementTree as ET
 from os import getenv, path, system
 
 import click
+import httpx
 from tabulate import tabulate
 
-################################################################################
+###############################################################################
 # Paths
+
+
+def SPLUNK_HOME(edition):
+    return "/usr/local/{}".format("splunk" if edition == "se" else "splunkforwarder")
+
 
 SRC_DIR = "src"
 SPLUNK_ENTERPRISE_DIR = path.join(SRC_DIR, "s14e")
@@ -18,20 +26,20 @@ DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
 USER_CONFIG_PATH = "user-config.json"
 
 # End Paths section
-################################################################################
+###############################################################################
 
-################################################################################
+###############################################################################
 # Constants
 
 VAGRANT_PROVIDER = getenv("VAGRANT_DEFAULT_PROVIDER", "virtualbox")
 BASE_IP = "192.168.56."
 PR_INSTANCES_IP_RANGE = {"idx": 2, "sh": 1, "fwd": 3}
 INSTANCES_DESCRIPTIONS = {
-    "idx": "Indexer",
-    "sh": "Search Head",
-    "fwd": "Universal Forwarder",
-    "hf": "Heavy Forwarder",
-    "lb": "Prod Search Heads Load Balancer",
+    "idx": "IDX",
+    "sh": "SH",
+    "fwd": "UF",
+    "hf": "HF",
+    "lb": "PR SH LB",
     "manager": "Manager",
 }
 CLUSTERS_CONFIG = {
@@ -39,54 +47,62 @@ CLUSTERS_CONFIG = {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "pr_sh": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "manager": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "de_sh": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "DE",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "de_idx": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "DE",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "lb": {
         "web": lambda ip: f"http://{ip}",
         "env": "",
         "dir": LOAD_BALANCER_DIR,
+        "edition": "",
     },
     "fwd": {
         "web": lambda _: "",
         "env": "",
         "dir": UNIVERSAL_FORWARDER_DIR,
+        "edition": "uf",
     },
     "hf": {
         "web": lambda _: "",
         "env": "",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
 }
 
 # End Constants section
-################################################################################
+###############################################################################
 
-################################################################################
+###############################################################################
 # Helper Functions
 
 
 def read_default_config():
     try:
-        with open(DEFAULT_CONFIG_PATH) as f:
+        with open(DEFAULT_CONFIG_PATH, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
@@ -94,7 +110,7 @@ def read_default_config():
 
 def read_user_config():
     try:
-        with open(USER_CONFIG_PATH) as f:
+        with open(USER_CONFIG_PATH, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
@@ -113,12 +129,34 @@ def write_config(config):
     else:
         config = {**read_user_config(), **config}
 
-    with open(USER_CONFIG_PATH, "w") as f:
+    with open(USER_CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
 
+async def get_splunk_version(ip):
+    try:
+        async with httpx.AsyncClient(verify=False) as client:
+            r = await client.get(
+                f"https://{ip}:8089/services/server/info",
+                headers={"Authorization": "Basic YWRtaW46YWRtaW4xMjM0"},
+            )
+
+        root = ET.fromstring(r.text)
+
+        namespaces = {
+            "s": "http://dev.splunk.com/ns/rest",
+            "atom": "http://www.w3.org/2005/Atom",
+        }
+
+        return root.findall(".//s:key[@name='version']", namespaces)[0].text
+    except httpx.ConnectTimeout:
+        return "The server is down"
+    except httpx.ConnectError:
+        return "Can't connect to the server"
+
+
 # End Helper Functions section
-################################################################################
+###############################################################################
 
 
 @click.group()
@@ -127,7 +165,8 @@ def cli():
 
 
 @cli.command(
-    help="Configure base image to create virtual machines. Vagrant hub url: https://app.vagrantup.com/boxes/search"
+    help="Configure base image to create virtual machines. \
+Vagrant hub url: https://app.vagrantup.com/boxes/search"
 )
 @click.argument("image", type=click.STRING, nargs=1, required=True)
 def config_base_image(image):
@@ -185,6 +224,8 @@ def config_instances(cluster, instances):
 
     write_config(config_to_add)
 
+    instance_description = INSTANCES_DESCRIPTIONS[cluster_without_env]
+
     if len(new_nodes_ips) > len(prev_nodes_ips):
         click.echo("\nNew instances added to configuration:\n")
         click.echo(
@@ -202,19 +243,18 @@ def config_instances(cluster, instances):
         )
         click.echo()
     elif len(new_nodes_ips) < len(prev_nodes_ips):
-        click.echo(
-            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
-        )
+        click.echo(f"\nProduction {instance_description} instances scaled down\n")
     else:
         click.echo(
-            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances already configured.\n"
+            f"\nProduction {instance_description} instances already configured.\n"
         )
 
 
 @cli.command(
     help="""Show information about the architecture.
-    
-    - vms: Show information about the virtual machines (IP, virtual machine name, type, environment and web interface)"""
+
+    - vms: Show information about the virtual machines (IP, virtual machine name, type, \
+environment and web interface)"""
 )
 @click.argument(
     "about", type=click.Choice(["vms"], case_sensitive=False), nargs=1, required=True
@@ -222,47 +262,64 @@ def config_instances(cluster, instances):
 def info(about):
     def vms():
         config = get_config()
+        data = []
 
-        data_to_show = []
-        for cluster_name, cluster_config in CLUSTERS_CONFIG.items():
-            cluster_config = CLUSTERS_CONFIG[cluster_name]
-            ips = config[cluster_name]["nodes"]["ips"]
-
-            for ip in ips:
-                cluster_name_without_env = cluster_name.replace("pr_", "").replace(
-                    "de_", ""
-                )
-                environment = cluster_config["env"]
-
-                vm_name = (
-                    f"{cluster_name}{ip[-1]}"
-                    if environment == "PR" or cluster_name_without_env == "fwd"
-                    else cluster_name
-                )
-
-                data_to_show.append(
-                    [
-                        ip,
-                        vm_name,
-                        INSTANCES_DESCRIPTIONS[cluster_name_without_env],
-                        environment,
-                        cluster_config["web"](ip),
-                    ]
-                )
-
-        click.echo(
-            tabulate(
-                data_to_show,
-                headers=[
-                    "IP",
-                    "VM Name",
-                    "Type",
-                    "Env",
-                    "Web",
-                ],
-                tablefmt="grid",
+        async def get_data_instance(
+            cluster_config_key,
+            cluster_config_value,
+            cluster_key_without_env,
+            cluster_edition,
+            cluster_env,
+            ip,
+        ):
+            vm_name = (
+                f"{cluster_config_key}{ip[-1]}"
+                if cluster_env == "PR" or cluster_edition == "uf"
+                else cluster_config_key
             )
-        )
+            version = await get_splunk_version(ip)
+
+            data.append(
+                [
+                    ip,
+                    vm_name,
+                    INSTANCES_DESCRIPTIONS[cluster_key_without_env],
+                    cluster_env,
+                    cluster_config_value["web"](ip),
+                    version,
+                ]
+            )
+
+        async def main():
+            async with asyncio.TaskGroup() as tg:
+                for cluster_config_key, cluster_config_value in CLUSTERS_CONFIG.items():
+                    ips = config[cluster_config_key]["nodes"]["ips"]
+
+                    cluster_key_without_env = cluster_config_key.replace(
+                        "pr_", ""
+                    ).replace("de_", "")
+
+                    for ip in ips:
+                        tg.create_task(
+                            get_data_instance(
+                                cluster_config_key,
+                                cluster_config_value,
+                                cluster_key_without_env,
+                                cluster_config_value["edition"],
+                                cluster_config_value["env"],
+                                ip,
+                            )
+                        )
+
+            click.echo(
+                tabulate(
+                    data,
+                    headers=["IP", "VM Name", "Type", "Env", "Web", "SPL Version"],
+                    tablefmt="grid",
+                )
+            )
+
+        asyncio.run(main())
 
     switch = {"vms": vms}
 
@@ -270,7 +327,10 @@ def info(about):
 
 
 @cli.command(
-    help='Performs actions on the server groups core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all server groups with argument "all".'
+    help='Performs actions on the server groups core_pr (manager, production indexers and \
+production search heads), core_de (development search head and development indexer), \
+fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or \
+perform actions in all server groups with argument "all".'
 )
 @click.option(
     "--action",
@@ -324,26 +384,41 @@ def manage_aux(action, server_groups):
             break
 
         vagrant_action = vagrant_actions[action]
-        dir = dirs[server_group]
+        vagrant_dir = dirs[server_group]
         servers = servers_groups[server_group]
 
         if server_group in ["core_pr", "core_de"]:
-            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
+            command = f"\
+cd {vagrant_dir} && \
+vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
 
             if action == "start":
-                pass
+                command += (
+                    f" && vagrant ssh -c '{SPLUNK_HOME("se")}/bin/splunk start' manager"
+                )
 
             system(command)
 
         for server in servers:
-            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
+            command = f"\
+cd {vagrant_dir} && \
+vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
+
+            if action == "start":
+                cluster_name = re.sub(r"\d", "", server)
+                cluster_edition = CLUSTERS_CONFIG[cluster_name]["edition"]
+                command += (
+                    f" && vagrant ssh -c '{SPLUNK_HOME(cluster_edition)}/bin/splunk start' {server}"
+                )
+
             system(command)
 
 
 @cli.command(
     help="""Connect to a virtual machine.
-            
-            - vm: Virtual machine name to connect. To see available virtual machines names, use the command \"info vms\""""
+
+            - vm: Virtual machine name to connect. To see available virtual machines names, use \
+the command \"info vms\""""
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
