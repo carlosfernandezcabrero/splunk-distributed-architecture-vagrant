@@ -393,8 +393,10 @@ cd {vagrant_dir} && \
 vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
 
             if action == "start":
+                splunk_home = SPLUNK_HOME("se")
+
                 command += (
-                    f" && vagrant ssh -c '{SPLUNK_HOME("se")}/bin/splunk start' manager"
+                    f" && vagrant ssh -c '{splunk_home}/bin/splunk start' manager"
                 )
 
             system(command)
@@ -406,10 +408,14 @@ vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
 
             if action == "start":
                 cluster_name = re.sub(r"\d", "", server)
-                cluster_edition = CLUSTERS_CONFIG[cluster_name]["edition"]
-                command += (
-                    f" && vagrant ssh -c '{SPLUNK_HOME(cluster_edition)}/bin/splunk start' {server}"
-                )
+
+                if cluster_name != "lb":
+                    cluster_edition = CLUSTERS_CONFIG[cluster_name]["edition"]
+                    splunk_home = SPLUNK_HOME(cluster_edition)
+
+                    command += (
+                        f" && vagrant ssh -c '{splunk_home}/bin/splunk start' {server}"
+                    )
 
             system(command)
 
