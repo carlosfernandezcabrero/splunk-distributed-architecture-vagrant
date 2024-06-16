@@ -13,6 +13,11 @@ from tabulate import tabulate
 ###############################################################################
 # Paths
 
+
+def SPLUNK_HOME(edition):
+    return "/usr/local/{}".format("splunk" if edition == "se" else "splunkforwarder")
+
+
 SRC_DIR = "src"
 SPLUNK_ENTERPRISE_DIR = path.join(SRC_DIR, "s14e")
 UNIVERSAL_FORWARDER_DIR = path.join(SRC_DIR, "u16f")
@@ -42,41 +47,49 @@ CLUSTERS_CONFIG = {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "pr_sh": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "PR",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "manager": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "de_sh": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "DE",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "de_idx": {
         "web": lambda ip: f"http://{ip}:8000",
         "env": "DE",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
     "lb": {
         "web": lambda ip: f"http://{ip}",
         "env": "",
         "dir": LOAD_BALANCER_DIR,
+        "edition": "",
     },
     "fwd": {
         "web": lambda _: "",
         "env": "",
         "dir": UNIVERSAL_FORWARDER_DIR,
+        "edition": "uf",
     },
     "hf": {
         "web": lambda _: "",
         "env": "",
         "dir": SPLUNK_ENTERPRISE_DIR,
+        "edition": "se",
     },
 }
 
@@ -371,19 +384,33 @@ def manage_aux(action, server_groups):
             break
 
         vagrant_action = vagrant_actions[action]
-        dir = dirs[server_group]
+        vagrant_dir = dirs[server_group]
         servers = servers_groups[server_group]
 
         if server_group in ["core_pr", "core_de"]:
-            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
+            command = f"\
+cd {vagrant_dir} && \
+vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
 
             if action == "start":
-                pass
+                command += (
+                    f" && vagrant ssh -c '{SPLUNK_HOME("se")}/bin/splunk start' manager"
+                )
 
             system(command)
 
         for server in servers:
-            command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
+            command = f"\
+cd {vagrant_dir} && \
+vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} {server}"
+
+            if action == "start":
+                cluster_name = re.sub(r"\d", "", server)
+                cluster_edition = CLUSTERS_CONFIG[cluster_name]["edition"]
+                command += (
+                    f" && vagrant ssh -c '{SPLUNK_HOME(cluster_edition)}/bin/splunk start' {server}"
+                )
+
             system(command)
 
 
