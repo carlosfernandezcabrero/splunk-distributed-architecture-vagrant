@@ -331,7 +331,7 @@ def manage_aux(action, server_groups):
             command = f"cd {dir} && vagrant --provider={VAGRANT_PROVIDER} {vagrant_action} manager"
 
             if action == "start":
-                command += " && python check_master_status.py"
+                pass
 
             system(command)
 
