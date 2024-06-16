@@ -10,7 +10,7 @@ import click
 import httpx
 from tabulate import tabulate
 
-################################################################################
+###############################################################################
 # Paths
 
 SRC_DIR = "src"
@@ -21,9 +21,9 @@ DEFAULT_CONFIG_PATH = path.join(SRC_DIR, "config.json")
 USER_CONFIG_PATH = "user-config.json"
 
 # End Paths section
-################################################################################
+###############################################################################
 
-################################################################################
+###############################################################################
 # Constants
 
 VAGRANT_PROVIDER = getenv("VAGRANT_DEFAULT_PROVIDER", "virtualbox")
@@ -81,15 +81,15 @@ CLUSTERS_CONFIG = {
 }
 
 # End Constants section
-################################################################################
+###############################################################################
 
-################################################################################
+###############################################################################
 # Helper Functions
 
 
 def read_default_config():
     try:
-        with open(DEFAULT_CONFIG_PATH) as f:
+        with open(DEFAULT_CONFIG_PATH, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
@@ -97,7 +97,7 @@ def read_default_config():
 
 def read_user_config():
     try:
-        with open(USER_CONFIG_PATH) as f:
+        with open(USER_CONFIG_PATH, encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
@@ -116,7 +116,7 @@ def write_config(config):
     else:
         config = {**read_user_config(), **config}
 
-    with open(USER_CONFIG_PATH, "w") as f:
+    with open(USER_CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
 
@@ -143,7 +143,7 @@ async def get_splunk_version(ip):
 
 
 # End Helper Functions section
-################################################################################
+###############################################################################
 
 
 @click.group()
@@ -152,7 +152,8 @@ def cli():
 
 
 @cli.command(
-    help="Configure base image to create virtual machines. Vagrant hub url: https://app.vagrantup.com/boxes/search"
+    help="Configure base image to create virtual machines. \
+Vagrant hub url: https://app.vagrantup.com/boxes/search"
 )
 @click.argument("image", type=click.STRING, nargs=1, required=True)
 def config_base_image(image):
@@ -210,6 +211,8 @@ def config_instances(cluster, instances):
 
     write_config(config_to_add)
 
+    instance_description = INSTANCES_DESCRIPTIONS[cluster_without_env]
+
     if len(new_nodes_ips) > len(prev_nodes_ips):
         click.echo("\nNew instances added to configuration:\n")
         click.echo(
@@ -227,19 +230,18 @@ def config_instances(cluster, instances):
         )
         click.echo()
     elif len(new_nodes_ips) < len(prev_nodes_ips):
-        click.echo(
-            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances scaled down\n"
-        )
+        click.echo(f"\nProduction {instance_description} instances scaled down\n")
     else:
         click.echo(
-            f"\nProduction {INSTANCES_DESCRIPTIONS[cluster_without_env]} instances already configured.\n"
+            f"\nProduction {instance_description} instances already configured.\n"
         )
 
 
 @cli.command(
     help="""Show information about the architecture.
-    
-    - vms: Show information about the virtual machines (IP, virtual machine name, type, environment and web interface)"""
+
+    - vms: Show information about the virtual machines (IP, virtual machine name, type, \
+environment and web interface)"""
 )
 @click.argument(
     "about", type=click.Choice(["vms"], case_sensitive=False), nargs=1, required=True
@@ -312,7 +314,10 @@ def info(about):
 
 
 @cli.command(
-    help='Performs actions on the server groups core_pr (manager, production indexers and production search heads), core_de (development search head and development indexer), fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or perform actions in all server groups with argument "all".'
+    help='Performs actions on the server groups core_pr (manager, production indexers and \
+production search heads), core_de (development search head and development indexer), \
+fwd (Forwarders), hf (Heavy Forwarder), lb (production search heads load balancer) or \
+perform actions in all server groups with argument "all".'
 )
 @click.option(
     "--action",
@@ -384,8 +389,9 @@ def manage_aux(action, server_groups):
 
 @cli.command(
     help="""Connect to a virtual machine.
-            
-            - vm: Virtual machine name to connect. To see available virtual machines names, use the command \"info vms\""""
+
+            - vm: Virtual machine name to connect. To see available virtual machines names, use \
+the command \"info vms\""""
 )
 @click.argument("vm", type=click.STRING, nargs=1, required=True)
 def connect(vm):
