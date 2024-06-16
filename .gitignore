@@ -9,3 +9,9 @@
 
 # Ignore user configuration file
 user-config.json
+
+# Ignore tests folder
+tests/
+
+# Ignore IDE configuration files
+.idea/
