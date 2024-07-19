@@ -44,11 +44,11 @@ Vagrant.configure("2") do |config|
         s.args = [max_file_descriptors, max_user_processes]
     end
 
-    config.vm.provision "reboot", type: "shell", reboot: true, inline: <<-SHELL
-        echo "----------"
-        echo "| REBOOT |"
-        echo "----------"
-    SHELL
+    # config.vm.provision "reboot", type: "shell", reboot: true, inline: <<-SHELL
+    #     echo "----------"
+    #     echo "| REBOOT |"
+    #     echo "----------"
+    # SHELL
 
     config.vm.provision "file",
         source: "./config/splunk-launch.conf",
