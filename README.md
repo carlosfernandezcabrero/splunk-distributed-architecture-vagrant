@@ -16,6 +16,7 @@
       - [config-base-image](#config-base-image)
       - [connect](#connect)
       - [config-instances](#config-instances)
+    - [Configuración de /etc/hosts](#configuración-de-etchosts)
   - [Especificaciones técnicas por defecto de la infraestructura](#especificaciones-técnicas-por-defecto-de-la-infraestructura)
     - [Numero de instancias](#numero-de-instancias)
     - [Grupos de servidores](#grupos-de-servidores)
@@ -155,6 +156,25 @@ Para obtener mas información ejecutar:
 
 ```bash
 python config-instances --help
+```
+
+### Configuración de /etc/hosts
+
+Añadir las siguientes lineas al archivo `/etc/hosts`:
+
+```bash
+# Splunk local environment addresses
+192.168.56.10	manager
+192.168.56.6	shde
+192.168.56.5  idxde
+192.168.56.11	shc1
+192.168.56.12	shc2
+192.168.56.21	idxc1
+192.168.56.22	idxc2
+192.168.56.23	idxc3
+192.168.56.24	idxc4
+192.168.56.4	shpr
+192.168.56.3	hf
 ```
 
 ## Especificaciones técnicas por defecto de la infraestructura
