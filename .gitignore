@@ -15,3 +15,7 @@ tests/
 
 # Ignore IDE configuration files
 .idea/
+
+# Ignore virtual environment
+venv/
+.venv/
