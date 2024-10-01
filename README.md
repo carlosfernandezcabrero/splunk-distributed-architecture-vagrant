@@ -17,6 +17,7 @@
       - [connect](#connect)
       - [config-instances](#config-instances)
   - [Especificaciones técnicas por defecto de la infraestructura](#especificaciones-técnicas-por-defecto-de-la-infraestructura)
+    - [Numero de instancias](#numero-de-instancias)
     - [Grupos de servidores](#grupos-de-servidores)
     - [Vagranfiles](#vagranfiles)
     - [Archivos de configuración](#archivos-de-configuración)
