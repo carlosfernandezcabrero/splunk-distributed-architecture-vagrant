@@ -48,7 +48,7 @@ Las credenciales del usuario de instalación de Splunk son las siguientes:
 - Configurar las imagen base para todas las maquinas virtuales del repositorio de imágenes base de Vagrant:
 
   ```bash
-  python cli.py config-base-image -i <imagen_base>
+  python cli.py config-base-image <imagen_base>
   ```
 
 - Descargar los comprimidos TGZ para Universal Forwarder y Splunk Enterprise con la version que queramos. Situar estos TGZ en el directorio `downloads` con los siguientes nombres:
